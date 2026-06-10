@@ -1,242 +1,89 @@
-# 🏖️ SANDAM - Smart Beach Management API
+<p align="center">
+  <img src="docs/img/sandam_banner.png" alt="SANDAM Banner" width="800">
+</p>
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+# SANDAM — Smart Beach Management API
 
-API REST asíncrona para gestión y monitorización en tiempo real del estado de las playas. Sistema de recomendaciones inteligentes que sugiere alternativas cuando una playa no cumple los criterios de seguridad o disponibilidad.
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue?logo=postgresql&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red)
+![Pydantic](https://img.shields.io/badge/Pydantic-2.9-CC0000?logo=pydantic)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## 📋 Características
-
-- ✅ CRUD completo de playas
-- ✅ Búsqueda por proximidad geográfica (Haversine)
-- ✅ Sistema de recomendaciones de seguridad
-- ✅ Búsqueda inteligente con alternativas sugeridas
-- ✅ Scoring automático de playas
-- ✅ Endpoints especializados para dashboards
-- ✅ Medidas de contención (fallback strategy)
-- ✅ Trazabilidad completa del dato
-- ✅ Preparado para integración con APIs externas (ACA, AEMET, NOAA)
-- ✅ Docker-compose para desarrollo rápido
-
-## 🛠️ Stack Tecnológico
-
-| Componente | Tecnología |
-|------------|------------|
-| Framework | FastAPI 0.115+ |
-| ORM | SQLAlchemy 2.0 (async) |
-| Driver DB | asyncpg |
-| Validación | Pydantic 2.9 |
-| Server | Uvicorn 0.30 |
-| Base de datos | PostgreSQL 14+ |
-| Testing | pytest |
-| Dashboard | Streamlit |
-
-## 🚀 Inicio Rápido
-
-### Prerrequisitos
-
-- Python 3.11+
-- PostgreSQL 14+ (o Docker)
-
-### Instalación
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/juandelaf1/SANDAM.git
-cd SANDAM
-
-# Crear entorno virtual
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# Ejecutar con Docker
-docker-compose up -d
-
-# O ejecutar directamente
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Verificar instalación
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Documentación interactiva
-# http://localhost:8000/docs
-```
-
-## 📁 Estructura del Proyecto
-
-```
-SANDAM/
-├── src/
-│   ├── main.py              # App FastAPI
-│   ├── config.py            # Configuración
-│   ├── database.py          # Conexión DB
-│   ├── models.py            # Modelos SQLAlchemy
-│   ├── schemas.py           # Schemas Pydantic
-│   ├── crud.py              # Operaciones CRUD
-│   ├── deps.py              # Dependencias
-│   ├── utils/
-│   │   ├── scoring.py       # Sistema de puntuación
-│   │   ├── recommendations.py # Recomendaciones seguridad
-│   │   ├── distance.py      # Algoritmo Haversine
-│   │   └── fallback.py      # Medidas contención
-│   └── api/
-│       ├── beaches.py      # Endpoints beaches
-│       ├── search.py        # Búsqueda inteligente
-│       ├── recommendations.py # Recomendaciones
-│       ├── analytics.py    # Analytics
-│       └── dashboard.py    # KPIs
-├── tests/
-├── docs/
-├── notebooks/dashboards/   # Streamlit apps
-├── docker-compose.yml
-└── requirements.txt
-```
-
-## 📊 Endpoints Principales
-
-### Playas (CRUD)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/v1/beaches/` | Crear playa |
-| GET | `/api/v1/beaches/` | Listar todas |
-| GET | `/api/v1/beaches/{id}` | Obtener una playa |
-| PUT | `/api/v1/beaches/{id}` | Actualizar playa |
-| DELETE | `/api/v1/beaches/{id}` | Eliminar playa |
-
-### Búsqueda y Recomendaciones
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/v1/beaches/nearby` | Playas cercanas |
-| GET | `/api/v1/beaches/best-nearby` | Mejores cercanas |
-| GET | `/api/v1/beaches/search` | Búsqueda inteligente |
-| GET | `/api/v1/beaches/{id}/recommendations` | Recomendaciones seguridad |
-
-### Dashboards
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/v1/dashboard/summary` | KPIs globales |
-| GET | `/api/v1/dashboard/alerts` | Alertas activas |
-| GET | `/api/v1/dashboard/analytics/occupation` | Serie ocupación |
-| GET | `/api/v1/dashboard/analytics/quality` | Distribución calidad |
-
-### Salud
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/health/ready` | Readiness probe |
-
-## 🔍 Ejemplos de Uso
-
-### Crear una playa
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/beaches/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Platja de la Barceloneta",
-    "region": "Cataluña",
-    "latitude": 41.3803,
-    "longitude": 2.1898,
-    "max_capacity": 15000,
-    "current_occupation": 45,
-    "flag_color": "green",
-    "water_quality": "excellent",
-    "has_lifeguard": true,
-    "has_shade": true,
-    "has_showers": true
-  }'
-```
-
-### Buscar playas cercanas
-
-```bash
-curl "http://localhost:8000/api/v1/beaches/nearby?lat=41.38&lon=2.19&radius_km=10"
-```
-
-### Búsqueda inteligente con alternativas
-
-```bash
-curl "http://localhost:8000/api/v1/beaches/search?name=Barceloneta&lat=41.38&lon=2.19"
-```
-
-### Obtener KPIs para dashboard
-
-```bash
-curl "http://localhost:8000/api/v1/dashboard/summary"
-```
-
-## 🐳 Docker
-
-```bash
-# Levantar todos los servicios
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f api
-
-# Detener
-docker-compose down
-```
-
-Servicios disponibles:
-- **API**: http://localhost:8000
-- **Swagger UI**: http://localhost:8000/docs
-- **PostgreSQL**: localhost:5432
-
-## 📦 Variables de Entorno
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | Connection string PostgreSQL | postgresql+asyncpg://postgres:postgres@localhost:5432/sandam |
-| `API_HOST` | Host de la API | 0.0.0.0 |
-| `API_PORT` | Puerto de la API | 8000 |
-| `LOG_LEVEL` | Nivel de logging | INFO |
-| `CORS_ORIGINS` | Origins permitidos para CORS | * |
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests
-pytest
-
-# Con coverage
-pytest --cov=src --cov-report=html
-```
-
-## 📈 Roadmap
-
-- [x] Fase 1: MVP Core (CRUD + Search + Recommendations)
-- [ ] Fase 2: Integración API ACA (Cataluña)
-- [ ] Fase 3: Dashboards Streamlit
-- [ ] Fase 4: Autenticación + Webhooks
-- [ ] Fase 5: Producto comercial
-
-## 📄 Licencia
-
-MIT License - ver [LICENSE](LICENSE)
-
-## 👤 Autor
-
-- **Juan de lafuente** - [juandelaf1](https://github.com/juandelaf1)
+> **Real-time beach monitoring and smart recommendation API. Async FastAPI + PostgreSQL + geospatial scoring.**
 
 ---
 
-🏖️ **SANDAM** - Tu guía inteligente de playas
+## Elevator Pitch
+
+**Problem**: Beachgoers and local authorities lack a centralized system to check real-time beach conditions — occupancy, water quality, safety flags, and nearby alternatives. Municipalities struggle to manage overcrowding and safety alerts efficiently.
+
+**Hypothesis**: An async FastAPI backend with geospatial search (Haversine), automated safety scoring, and fallback strategies can provide real-time beach intelligence and smart alternative recommendations.
+
+**Solution**: SANDAM — a complete async REST API with **CRUD operations**, **proximity search**, **smart safety recommendations**, **automatic beach scoring**, and **analytics endpoints** for dashboard integration.
+
+---
+
+## Problem
+
+- No centralized beach condition monitoring
+- Overcrowding without real-time alternatives
+- Manual safety flag updates
+- Lack of historical occupancy data
+
+## Key Features
+
+| Feature | Description |
+|---------|------------|
+| Full CRUD | Create, read, update, delete beaches |
+| Proximity Search | Haversine-based nearby beach finder |
+| Safety Scoring | Automatic beach safety assessment |
+| Smart Recommendations | Alternative suggestions when conditions are poor |
+| Analytics Endpoints | KPIs, alerts, occupancy series, quality distribution |
+| Fallback Strategy | Graceful degradation on API failures |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/beaches/` | Create beach |
+| GET | `/api/v1/beaches/` | List all beaches |
+| GET | `/api/v1/beaches/{id}` | Get beach details |
+| GET | `/api/v1/beaches/nearby` | Find nearby beaches |
+| GET | `/api/v1/beaches/search` | Smart search with alternatives |
+| GET | `/api/v1/beaches/{id}/recommendations` | Safety recommendations |
+| GET | `/api/v1/dashboard/summary` | Global KPIs |
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Framework | FastAPI 0.115+ (async) |
+| ORM | SQLAlchemy 2.0 (async) |
+| DB Driver | asyncpg |
+| Validation | Pydantic 2.9 |
+| Database | PostgreSQL 14+ |
+| Geospatial | Haversine algorithm |
+| Dashboard | Streamlit |
+| Containers | Docker Compose |
+
+## Quick Start
+
+```bash
+git clone https://github.com/juandelaf1/SANDAM.git
+cd SANDAM
+docker-compose up -d
+# API: http://localhost:8000
+# Swagger: http://localhost:8000/docs
+```
+
+---
+
+## Author
+
+**Juan de la Fuente** — [@juandelaf1](https://github.com/juandelaf1)
+
+juandelafuentelarrocca@gmail.com
