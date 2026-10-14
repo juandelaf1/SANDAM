@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
 from src.database import init_db
-from src.api import beaches, search, recommendations, dashboard
+from src.api import beaches, search, recommendations, dashboard, weather, external_data, predictions, donde_ir, scraper_endpoints
 from src.schemas import HealthResponse
 
 settings = get_settings()
@@ -35,10 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(beaches.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
+app.include_router(beaches.router, prefix="/api/v1")
 app.include_router(recommendations.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(weather.router, prefix="/api/v1")
+app.include_router(external_data.router, prefix="/api/v1")
+app.include_router(predictions.router, prefix="/api/v1")
+app.include_router(donde_ir.router, prefix="/api/v1")
+app.include_router(scraper_endpoints.router, prefix="/api/v1")
 
 
 @app.get("/health", response_model=HealthResponse)

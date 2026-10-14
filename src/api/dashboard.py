@@ -34,7 +34,7 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
     )
     for quality, count in result.all():
         if quality:
-            quality_counts[quality.value] = count
+            quality_counts[str(quality)] = count
 
     flag_counts = {
         "green": 0,
@@ -48,7 +48,7 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
     )
     for flag, count in result.all():
         if flag:
-            flag_counts[flag.value] = count
+            flag_counts[str(flag)] = count
 
     active_alerts = flag_counts.get("red", 0)
 
@@ -65,7 +65,7 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
 @router.get("/alerts")
 async def get_alerts(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(Beach).where(Beach.flag_color == FlagColor.red)
+        select(Beach).where(Beach.flag_color == "red")
     )
     red_beaches = result.scalars().all()
 
@@ -126,7 +126,7 @@ async def get_quality_analytics(db: AsyncSession = Depends(get_db)):
     data = []
     for quality, count in result.all():
         if quality:
-            data.append({"quality": quality.value, "count": count})
+            data.append({"quality": str(quality), "count": count})
 
     return {"data": data}
 
@@ -141,6 +141,6 @@ async def get_safety_analytics(db: AsyncSession = Depends(get_db)):
     data = []
     for flag, count in result.all():
         if flag:
-            data.append({"flag": flag.value, "count": count})
+            data.append({"flag": str(flag), "count": count})
 
     return {"data": data}

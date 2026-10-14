@@ -62,3 +62,11 @@ logs/
 
 # Docker
 .dockerignore
+debug_*.py
+check_*.py
+list_*.py
+*_temp.py
+*.html
+data/
+raspal_cache*
+*.sqlite

@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, Enum, DateTime, Index
+from enum import Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Index
 from sqlalchemy.dialects.postgresql import UUID
 from src.database import Base
 
@@ -50,8 +51,8 @@ class Beach(Base):
     wind_speed = Column(Float, nullable=True)
     wave_height = Column(Float, nullable=True)
 
-    tide = Column(Enum(Tide), nullable=True)
-    flag_color = Column(Enum(FlagColor), default=FlagColor.unknown)
+    tide = Column(String(20), nullable=True)
+    flag_color = Column(String(20), default=FlagColor.unknown.value)
 
     jellyfish_present = Column(Boolean, default=False)
     jellyfish_species = Column(String(100), nullable=True)
@@ -59,7 +60,7 @@ class Beach(Base):
     sargasso_level = Column(Integer, default=0)
     posidonia_present = Column(Boolean, default=False)
 
-    water_quality = Column(Enum(WaterQuality), default=WaterQuality.unknown)
+    water_quality = Column(String(20), default=WaterQuality.unknown.value)
     e_coli_count = Column(Integer, nullable=True)
     enterococci_count = Column(Integer, nullable=True)
 
@@ -70,7 +71,7 @@ class Beach(Base):
     has_accessibility = Column(Boolean, default=False)
     has_lifeguard = Column(Boolean, default=False)
 
-    data_status = Column(Enum(DataStatus), default=DataStatus.unavailable)
+    data_status = Column(String(20), default=DataStatus.unavailable.value)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
