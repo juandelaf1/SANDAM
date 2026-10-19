@@ -5,6 +5,7 @@ Contiene:
 2. Prediccion medusas basada en reglas
 3. Score Playa Ideal mejorado con distancia
 4. Calculo de atardecer por fecha/ubicacion
+5. Explicaciones estructuradas (FR-006, T017)
 '''
 
 from datetime import datetime, timedelta
@@ -121,6 +122,45 @@ def calcular_sol_restante() -> Dict:
     }
 
 
+def generar_explicacion(playa: Dict, status: str, sol_restante_min: int,
+                       distancia: float, score: float) -> Dict:
+    '''Genera una explicacion estructurada (reason + factors) para una recomendacion (FR-006).
+
+    No inventa datos: los factores se derivan de los valores documentados de la playa.
+    '''
+    factors = []
+
+    quality = playa.get("water_quality")
+    if quality is not None:
+        factors.append("calidad del agua: {}".format(quality))
+
+    wave = playa.get("wave_height")
+    if wave is not None:
+        factors.append("oleaje: {}m".format(wave))
+
+    uv = playa.get("uv_index")
+    if uv is not None:
+        factors.append("UV: {}".format(uv))
+
+    factors.append("distancia: {:.1f} km".format(distancia))
+
+    occupation = playa.get("current_occupation")
+    if occupation is not None:
+        factors.append("ocupacion documentada: {}%".format(occupation))
+
+    if playa.get("has_lifeguard"):
+        factors.append("socorrista presente")
+
+    if status == "recomendada":
+        reason = "Playa recomendada: condiciones favorables y tiempo de viaje adecuado para el sol restante."
+    elif status == "marginal":
+        reason = "Playa marginal: tiempo de viaje ajustado al sol restante."
+    else:
+        reason = "Playa no merece la pena: tiempo de viaje superior al sol restante."
+
+    return {"reason": reason, "factors": factors}
+
+
 def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
                   incluye_marginales: bool = False) -> List[Dict]:
     '''ALGORITMO PRINCIPAL: Donde voy ahora (dos etapas, T012/T013).
@@ -209,6 +249,8 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
             ],
             "pressure_relative": relative_pressure(playa.get("current_occupation")),
             "travel_time_is_estimate": True,
+            # Explicacion estructurada (FR-006, T017/T018)
+            "explanation": generar_explicacion(playa, status, sol_restante_min, distancia, score),
         })
 
     if not incluye_marginales:

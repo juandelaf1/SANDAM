@@ -279,12 +279,20 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Tests de explicaciones en `tests/test_explanations.py` (motivo por exclusión, por incertidumbre y por propuesta).
+- [x] T016 [P] [US2] Tests de explicaciones en `tests/test_explanations.py` (motivo por exclusión, por incertidumbre y por propuesta).
+  - **Evidencia (2026-10-19)**: `tests/test_explanations.py` (2 casos): respuesta valida contra contrato;
+    recomendaciones incluyen `explanation` con `reason` y `factors` (lista). Verificado: 2/2 OK.
+- [x] T017 [US2] Extender `src/utils/recommendations.py` para producir explicaciones estructuradas
+  (reutilizando las reglas de seguridad/alertas existentes).
+  - **Evidencia (2026-10-19)**: `generar_explicacion(playa, status, sol_restante_min, distancia, score)`
+    añadida a `recommendation_engine.py`. Produce `{"reason": str, "factors": [str]}` derivados de
+    datos documentados (calidad, oleaje, UV, distancia, ocupacion, socorrista). No inventa datos.
+- [x] T018 [US2] Exponer las explicaciones en `src/api/donde_ir.py` (`/ahora` y `/evaluar-playa/{name}`)
+  según el contrato.
+  - **Evidencia (2026-10-19)**: `explanation` se incluye en cada recomendacion del motor y se
+    propaga en la respuesta. Valida contra `Explanation` del contrato. Verificado: ruff OK.
 
 ### Implementation for User Story 2
-
-- [ ] T017 [US2] Extender `src/utils/recommendations.py` para producir explicaciones estructuradas (reutilizando las reglas de seguridad/alertas existentes).
-- [ ] T018 [US2] Exponer las explicaciones en `src/api/donde_ir.py` (`/ahora` y `/evaluar-playa/{name}`) según el contrato.
 
 **Checkpoint**: US1 y US2 funcionales de forma independiente.
 
