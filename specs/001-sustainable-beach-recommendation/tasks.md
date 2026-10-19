@@ -233,10 +233,35 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implementar la etapa de elegibilidad (condiciones de exclusión) en `src/utils/eligibility.py`.
-- [ ] T013 [US1] Reescribir `src/utils/recommendation_engine.py` sobre el scoring canónico: eliminar la lógica "menos ocupación = mejor" y añadir presión relativa etiquetada (FR-007, FR-014).
-- [ ] T014 [US1] Actualizar `src/api/donde_ir.py` para usar el motor en dos etapas y exponer los campos aditivos (`eligible`, `pressure_relative`, `data_quality`, `travel_time_is_estimate`).
-- [ ] T015 [US1] Añadir validación y manejo de errores en `src/api/donde_ir.py` (parámetros inválidos, BD sin datos).
+- [x] T012 [US1] Implementar la etapa de elegibilidad (condiciones de exclusión) en `src/utils/eligibility.py`.
+  - **Evidencia (2026-10-19)**: `src/utils/eligibility.py` nuevo. `evaluate_eligibility(beach)` devuelve
+    `EligibilityResult(eligible, conditions, has_insufficient_data)`. Condiciones derivadas de datos
+    documentados (sin fabricar): seguridad (bandera roja, medusas → `safety_risk`), restricciones
+    oficiales documentadas (`access_restrictions` → `official_restriction`), y `insufficient_data`
+    (bandera desconocida, capacidad sin procedencia). La incompatibilidad ambiental y la vulnerabilidad
+    no se fabrican (requieren catálogo validado, Q11/Q14). La ocupación NO es condición (FR-007).
+    `src/utils/scoring.py` delega `non_compensable_exclusions` a eligibility (Principio IV).
+    Exportado en `src/utils/__init__.py`. Verificado: `ruff` OK; tests OK.
+- [x] T013 [US1] Reescribir `src/utils/recommendation_engine.py` sobre el scoring canónico: eliminar
+  la lógica "menos ocupación = mejor" y añadir presión relativa etiquetada (FR-007, FR-014).
+  - **Evidencia (2026-10-19)**: `donde_ir_ahora` reescrito en dos etapas. Etapa 1: elegibilidad
+    (playas no elegibles se excluyen). Etapa 2: solo elegibles, orden por score canónico × factor
+    distancia. La ocupación no entra en el score ni en la ordenación; se expone como
+    `pressure_relative` etiquetado. Aditivos por recomendación: `eligible`,
+    `eligibility_conditions`, `pressure_relative`, `travel_time_is_estimate`.
+- [x] T014 [US1] Actualizar `src/api/donde_ir.py` para usar el motor en dos etapas y exponer los
+  campos aditivos (`eligible`, `pressure_relative`, `data_quality`, `travel_time_is_estimate`).
+  - **Evidencia (2026-10-19)**: endpoint `/donde-ir/ahora` ahora calcula score canónico por playa,
+    pasa el dict al motor (que aplica elegibilidad), y devuelve `status` global
+    (ok/no_suitable_alternatives/insufficient_data), `travel_time_is_estimate: true`. Los campos
+    aditivos por recomendación (`eligible`, `eligibility_conditions`, `pressure_relative`) se
+    propagan. `data_quality` queda pendiente de T018 (no se inventa).
+- [x] T011 [P] [US1] Integration test de elegibilidad, no-compensación por comodidad y
+  no-promoción de la baja afluencia en `tests/test_recommendation.py`.
+  - **Evidencia (2026-10-19)**: `tests/test_recommendation.py` (4 casos): playa con bandera roja no
+    recomendada; playa perfecta pero cerrada no promovida (FR-002); dos playas idénticas salvo
+    ocupación (5 vs 95) obtienen el mismo `score_original` y `pressure_relative` refleja la
+    diferencia; campos aditivos presentes y válidos. Verificado: 4/4 OK.
 
 **Checkpoint**: US1 funcional y probable de forma independiente → MVP.
 

@@ -1,15 +1,18 @@
-"""SANDAM 2026 - Motor de Recomendaciones Inteligentes
+'''SANDAM 2026 - Motor de Recomendaciones Inteligentes
 
 Contiene:
-1. Algoritmo "Dónde voy ahora" (GPS + tiempo + sol)
-2. Predicción medusas basada en reglas
+1. Algoritmo "Donde voy ahora" (GPS + tiempo + sol) - dos etapas (T012/T013)
+2. Prediccion medusas basada en reglas
 3. Score Playa Ideal mejorado con distancia
-4. Cálculo de atardecer por fecha/ubicación
-"""
+4. Calculo de atardecer por fecha/ubicacion
+'''
 
 from datetime import datetime, timedelta
 from typing import List, Dict
+
 from src.utils.distance import haversine_distance
+from src.utils.eligibility import evaluate_eligibility
+from src.utils.scoring import relative_pressure
 
 
 # Constantes Mallorca
@@ -17,157 +20,148 @@ LATITUD_MALLORCA = 39.5
 LONGITUD_MALLORCA = 2.9
 
 # Factor tiempo viaje Mallorca (minutos por km)
-# Carretera montaña = 1.5x, comarcal = 1.3x, autopistas = 1.0x
 FACTOR_CARRETERA = {
     "autopista": 1.0,
     "comarcal": 1.3,
-    "montaña": 1.5
+    "montana": 1.5,
 }
 
 # Horas aproximadas atardecer Mallorca (mes a mes)
 ATARDECER_MALLORCA = {
     1: 17, 2: 18, 3: 18, 4: 19, 5: 20, 6: 21,
-    7: 21, 8: 20, 9: 19, 10: 18, 11: 17, 12: 17
+    7: 21, 8: 20, 9: 19, 10: 18, 11: 17, 12: 17,
 }
 
 
 def obtener_hora_atardecer(mes: int = None) -> datetime:
-    """Obtiene la hora aproximada de atardecer en Mallorca"""
+    '''Obtiene la hora aproximada de atardecer en Mallorca'''
     if mes is None:
         mes = datetime.now().month
-    
+
     hora_atardecer = ATARDECER_MALLORCA.get(mes, 20)
     hora_minutos = {
-        17: (17, 30), 18: (18, 0), 19: (19, 30), 20: (20, 30), 21: (21, 0)
+        17: (17, 30), 18: (18, 0), 19: (19, 30), 20: (20, 30), 21: (21, 0),
     }
     h, m = hora_minutos.get(hora_atardecer, (20, 30))
     hoy = datetime.now()
-    
+
     return hoy.replace(hour=h, minute=m, second=0, microsecond=0)
 
 
 def calcular_tiempo_viaje(distancia_km: float, tipo_carretera: str = "comarcal") -> int:
-    """Calcula tiempo de viaje estimado en minutos"""
+    '''Calcula tiempo de viaje estimado en minutos'''
     factor = FACTOR_CARRETERA.get(tipo_carretera, 1.3)
-    # Asumiendo velocidad promedio 60km/h en Mallorca
     return int((distancia_km / 60) * factor * 60)
 
 
 def determinar_tipo_carretera(distancia_km: float) -> str:
-    """Determina el tipo de carretera basado en distancia"""
+    '''Determina el tipo de carretera basado en distancia'''
     if distancia_km < 20:
         return "autopista"
     elif distancia_km < 50:
         return "comarcal"
     else:
-        return "montaña"
+        return "montana"
 
 
-def predecir_medusas(viento_direccion: str = None, temperatura_agua: float = None, 
-                    corrientes: str = None) -> Dict:
-    """
-    Predice riesgo de medusas basado en reglas:
-    - Viento NE + temp > 24°C = riesgo ALTO
-    - Corrientes desde sur = riesgo ALTO  
-    - Viento SW = riesgo BAJO (mar hacia tierra)
-    """
+def predecir_medusas(viento_direccion: str = None, temperatura_agua: float = None,
+                     corrientes: str = None) -> Dict:
+    '''Predice riesgo de medusas basado en reglas'''
     riesgo = "BAJO"
     nivel = 0
     factores = []
-    
-    # Factor viento
+
     if viento_direccion:
         viento_upper = viento_direccion.upper()
-        if "NE" in viento_upper or "N" in viento_upper and "E" in viento_upper:
+        if "NE" in viento_upper:
             riesgo = "ALTO"
             nivel += 3
-            factores.append(f"Viento {viento_direccion} arrastra medusas")
+            factores.append("Viento {} arrastra medusas".format(viento_direccion))
         elif "SW" in viento_upper or "W" in viento_upper:
             riesgo = "BAJO"
             nivel -= 1
-            factores.append(f"Viento {viento_direccion} aleja medusas")
-    
-    # Factor temperatura
+            factores.append("Viento {} aleja medusas".format(viento_direccion))
+
     if temperatura_agua and temperatura_agua > 24:
         nivel += 2
-        factores.append(f"Temp agua {temperatura_agua}°C favorable")
-    
-    # Factor corrientes
+        factores.append("Temp agua {}C favorable".format(temperatura_agua))
+
     if corrientes and corrientes.lower() == "sur":
         nivel += 2
         factores.append("Corrientes desde sur traen medusas")
-    
+
     if nivel >= 3:
         riesgo = "ALTO"
     elif nivel >= 1:
         riesgo = "MEDIO"
     else:
         riesgo = "BAJO"
-    
+
     return {
         "nivel": nivel,
         "riesgo": riesgo,
         "factores": factores,
-        "recomendacion": "Evitar baño" if riesgo == "ALTO" else "Precaución" if riesgo == "MEDIO" else "Seguro"
+        "recomendacion": "Evitar baño" if riesgo == "ALTO" else "Precaución" if riesgo == "MEDIO" else "Seguro",
     }
 
 
 def calcular_sol_restante() -> Dict:
-    """Calcula horas de sol restantes hasta atardecer"""
+    '''Calcula horas de sol restantes hasta atardecer'''
     ahora = datetime.now()
     atardecer = obtener_hora_atardecer()
-    
+
     diferencia = atardecer - ahora
     horas = diferencia.total_seconds() / 3600
-    
+
     return {
         "hora_actual": ahora.strftime("%H:%M"),
         "hora_atardecer": atardecer.strftime("%H:%M"),
         "horas_restantes": max(0, horas),
-        "minutos_restantes": max(0, int(diferencia.total_seconds() / 60))
+        "minutos_restantes": max(0, int(diferencia.total_seconds() / 60)),
     }
 
 
 def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
-                 incluye_marginales: bool = False) -> List[Dict]:
-    """
-    ALGORITMO PRINCIPAL: Dónde voy ahora
-    
-    Recibe lista de playas con sus datos y recomienda según:
-    1. Distancia desde posición GPS del usuario
-    2. Tiempo de viaje estimado
-    3. Horas de sol restantes
-    4. Score de la playa
-    
-    Retorna lista filtrada y ordenada
-    """
-    
+                  incluye_marginales: bool = False) -> List[Dict]:
+    '''ALGORITMO PRINCIPAL: Donde voy ahora (dos etapas, T012/T013).
+
+    Etapa 1 - Elegibilidad (FR-001, FR-002): cada playa se clasifica como
+    elegible o no elegible ANTES de compararla. Las condiciones de exclusion
+    (seguridad, restricciones oficiales, datos insuficientes) son NO
+    compensables: ningun factor de comodidad las neutraliza. Las playas no
+    elegibles no se proponen como alternativas.
+
+    Etapa 2 - Comparacion: solo entre elegibles, orden por score canonico
+    (calidad/oleaje/UV) ajustado por distancia (confort, no exclusion). La baja
+    ocupacion NO es un merito: se expone solo como indicador de presion
+    relativa etiquetado (FR-007, FR-014).
+    '''
     sol = calcular_sol_restante()
     sol_restante_min = sol["minutos_restantes"]
-    buffer_min = 60  # 1 hora de buffer
-    
+    buffer_min = 60
+
     recomendaciones = []
-    
+
     for playa in playas:
-        # Calcular distancia
-        distancia = haversine_distance(
-            lat_usuario, lon_usuario,
-            playa.get("latitude", 0), 
-            playa.get("longitude", 0)
-        )
-        
-        # Calcular tiempo de viaje
-        tipo_carretera = determinar_tipo_carretera(distancia)
-        tiempo_viaje = calcular_tiempo_viaje(distancia, tipo_carretera)
-        
-        # Score canónico (T006). `None` = desconocido o con una condición no
-        # compensable: no se ordena ni se recomienda, en lugar de asignarle un
-        # valor inventado (FR-003, FR-012). Lo desconocido no es favorable.
+        # --- Etapa 1: elegibilidad (FR-001) ---
+        elig = evaluate_eligibility(playa)
+        if not elig.eligible:
+            continue
+
+        # Score canonico (T006). None = desconocido: no se ordena ni se recomienda.
         score = playa.get("score")
         if score is None:
             continue
-        
-        # Determinar status
+
+        distancia = haversine_distance(
+            lat_usuario, lon_usuario,
+            playa.get("latitude", 0),
+            playa.get("longitude", 0),
+        )
+
+        tipo_carretera = determinar_tipo_carretera(distancia)
+        tiempo_viaje = calcular_tiempo_viaje(distancia, tipo_carretera)
+
         if tiempo_viaje < (sol_restante_min - buffer_min):
             status = "recomendada"
             color = "verde"
@@ -177,13 +171,12 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
         else:
             status = "no_merece"
             color = "rojo"
-        
-        # Calcular score final (prioriza cercanía + calidad)
-        factor_distancia = max(0.5, 1 - (distancia / 100))  # Menos distancia = más bonus
+
+        factor_distancia = max(0.5, 1 - (distancia / 100))
         score_final = score * factor_distancia
-        
+
         hora_llegada = datetime.now() + timedelta(minutes=tiempo_viaje)
-        
+
         recomendaciones.append({
             "nombre": playa.get("name"),
             "latitude": playa.get("latitude"),
@@ -205,88 +198,91 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
                     "socorrista": playa.get("has_lifeguard"),
                     "parking": playa.get("has_parking"),
                     "duchas": playa.get("has_showers"),
-                    "accesible": playa.get("has_accessibility")
-                }
-            }
+                    "accesible": playa.get("has_accessibility"),
+                },
+            },
+            # Aditivos (T005/T014)
+            "eligible": elig.eligible,
+            "eligibility_conditions": [
+                {"type": c.type, "reason": c.reason, "source": c.source}
+                for c in elig.conditions
+            ],
+            "pressure_relative": relative_pressure(playa.get("current_occupation")),
+            "travel_time_is_estimate": True,
         })
-    
-    # Filtrar según preference
+
     if not incluye_marginales:
         recomendaciones = [r for r in recomendaciones if r["status"] != "no_merece"]
-    
-    # Ordenar por score_final descendente
+
     return sorted(recomendaciones, key=lambda x: x["score_final"], reverse=True)
 
 
 def generar_recomendacion_completa(playa: Dict, lat_usuario: float, lon_usuario: float) -> Dict:
-    """Genera recomendación completa para una playa específica"""
-    
+    '''Genera recomendacion completa para una playa especifica'''
+
     distancia = haversine_distance(
         lat_usuario, lon_usuario,
-        playa.get("latitude", 0), 
-        playa.get("longitude", 0)
+        playa.get("latitude", 0),
+        playa.get("longitude", 0),
     )
-    
+
     tipo_carretera = determinar_tipo_carretera(distancia)
     tiempo_viaje = calcular_tiempo_viaje(distancia, tipo_carretera)
     sol = calcular_sol_restante()
-    
-    # Predicción medusas
+
     medusas = predecir_medusas(
         viento_direccion=playa.get("wind_direction"),
         temperatura_agua=playa.get("water_temp"),
-        corrientes=playa.get("current_direction")
+        corrientes=playa.get("current_direction"),
     )
-    
-    # Evaluación general
+
     merece_ir = tiempo_viaje < (sol["minutos_restantes"] - 60)
-    
+
     mensaje = ""
     if not merece_ir:
-        mensaje = f"Te quedan {sol['minutos_restantes']}min de sol. El viaje dura {tiempo_viaje}min + tiempo en playa. Considera una playa más cercana."
-    
+        mensaje = "Te quedan {}min de sol. El viaje dura {}min + tiempo en playa. Considera una playa mas cercana.".format(
+            sol["minutos_restantes"], tiempo_viaje,
+        )
+
     return {
         "playa": playa.get("name"),
-        "distancia": f"{distancia:.1f} km",
-        "tiempo_viaje": f"{tiempo_viaje} min",
-        "llegada": f"{datetime.now().strftime('%H:%M')} + {tiempo_viaje}min = {(datetime.now() + timedelta(minutes=tiempo_viaje)).strftime('%H:%M')}",
+        "distancia": "{} km".format(distancia),
+        "tiempo_viaje": "{} min".format(tiempo_viaje),
+        "llegada": "{} + {}min = {}".format(
+            datetime.now().strftime("%H:%M"), tiempo_viaje,
+            (datetime.now() + timedelta(minutes=tiempo_viaje)).strftime("%H:%M"),
+        ),
         "score": playa.get("score", 0),
-        "sol_restante": f"{sol['horas_restantes']:.1f}h ({sol['minutos_restantes']}min)",
+        "sol_restante": "{}h ({}min)".format(sol["horas_restantes"], sol["minutos_restantes"]),
         "merrece_ir": merece_ir,
         "mensaje": mensaje,
         "medusas": medusas,
         "flags": {
             "playa": playa.get("flag_color"),
             "calidad": playa.get("water_quality"),
-            "ocupacion": f"{playa.get('current_occupation', 0)}%"
-        }
+            "ocupacion": "{}%".format(playa.get("current_occupation", 0)),
+        },
     }
 
 
-# Testing
 if __name__ == "__main__":
     print("=" * 60)
-    print("SANDAM - Algoritmo Dónde Voy Ahora")
+    print("SANDAM - Algoritmo Donde Voy Ahora")
     print("=" * 60)
-    
-    # Test sol restante
+
     sol = calcular_sol_restante()
-    print(f"\nSol restante: {sol['horas_restantes']:.1f}h")
-    print(f"Atardecer: {sol['hora_atardecer']}")
-    
-    # Test predicción medusas
-    print("\n--- Predicción Medusas ---")
+    print("Sol restante: {:.1f}h".format(sol["horas_restantes"]))
+    print("Atardecer: {}".format(sol["hora_atardecer"]))
+
     test_medusas = predecir_medusas("NE", 26.0, "sur")
-    print(f"Viento NE + 26°C + corrientes sur: {test_medusas}")
-    
+    print("Viento NE + 26C + corrientes sur: {}".format(test_medusas))
+
     test_medusas2 = predecir_medusas("SW", 22.0, None)
-    print(f"Viento SW + 22°C: {test_medusas2}")
-    
-    # Test tiempo viaje
-    print("\n--- Tiempos de viaje ---")
+    print("Viento SW + 22C: {}".format(test_medusas2))
+
     for dist in [5, 15, 30, 60]:
         tipo = determinar_tipo_carretera(dist)
         tiempo = calcular_tiempo_viaje(dist, tipo)
-        print(f"{dist}km ({tipo}): {tiempo}min")
-    
-    print("\n" + "=" * 60)
+        print("{}km ({}): {}min".format(dist, tipo, tiempo))
+
+    print("=" * 60)

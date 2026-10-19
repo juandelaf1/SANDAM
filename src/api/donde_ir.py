@@ -75,6 +75,18 @@ async def donde_ir_ahora_endpoint(
 
     sol = calcular_sol_restante()
 
+    # Estado global (FR-012): si no hay ninguna recomendacion elegible, se declara.
+    if not recomendaciones and playas_con_score:
+        # Distinguir: sin datos suficientes vs sin alternativas adecuadas.
+        any_insufficient = any(
+            p.get("score") is None for p in playas_con_score
+        )
+        status = "insufficient_data" if any_insufficient else "no_suitable_alternatives"
+    elif recomendaciones:
+        status = "ok"
+    else:
+        status = None
+
     return {
         "ubicacion_usuario": {"lat": lat, "lon": lon},
         "hora_actual": sol["hora_actual"],
@@ -82,6 +94,8 @@ async def donde_ir_ahora_endpoint(
         "sol_restante": f"{sol['horas_restantes']:.1f}h",
         "total_playas": len(playas_con_score),
         "recomendaciones": recomendaciones,
+        "status": status,
+        "travel_time_is_estimate": True,
     }
 
 

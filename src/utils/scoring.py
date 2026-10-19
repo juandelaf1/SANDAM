@@ -52,7 +52,7 @@ son límites ecológicos ni pretenden precisión científica.
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
-from src.models import FlagColor, WaterQuality
+from src.models import WaterQuality
 
 # --- Pesos del score canónico de comparación (etapa 2) ------------------------
 # Pesos **relativos** entre los factores que sí se puntúan. El score es su media
@@ -186,18 +186,14 @@ def non_compensable_exclusions(beach: dict) -> Tuple[str, ...]:
     """Condiciones de seguridad que **no** se compensan con comodidad (FR-002).
 
     Son reglas de exclusión, no factores de puntuación: se aplican *antes* del
-    score. Se mantienen aquí, en un único lugar (Principio IV), como puente
-    explícito hacia la etapa de elegibilidad completa (T012, ``eligibility.py``),
-    que leerá además restricciones oficiales, incompatibilidad ambiental y datos
-    insuficientes desde las observaciones y las expondrá en
-    ``eligibility_conditions``.
+    score. La detección vive en ``src/utils/eligibility.py`` (dueña de la etapa
+    de elegibilidad, T012); aquí se delega para no duplicar la regla
+    (Principio IV). Se mantiene la firma de texto por compatibilidad con los
+    consumidores y tests existentes.
     """
-    reasons = []
-    if _same_value(beach.get("flag_color"), FlagColor.red):
-        reasons.append("bandera roja: baño no permitido (prohibición oficial)")
-    if beach.get("jellyfish_present") is True:
-        reasons.append("presencia de medusas: riesgo sanitario")
-    return tuple(reasons)
+    from src.utils.eligibility import non_compensable_exclusions as _elig
+
+    return _elig(beach)
 
 
 # --- Resultado canónico -------------------------------------------------------

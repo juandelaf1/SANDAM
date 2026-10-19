@@ -283,8 +283,10 @@ async def test_current_endpoint_output_validates_against_contract(client, sample
 
     parsed = DondeIrResponse.model_validate(response.json())
     assert parsed.total_playas == 1
+    # Tras T014 los campos aditivos se rellenan (ya no son None por defecto).
+    assert parsed.status is not None
+    assert parsed.travel_time_is_estimate is True
     for rec in parsed.recomendaciones:
         assert rec.nombre
-        assert rec.eligible is None
-        assert rec.explanation is None
-    assert parsed.status is None
+        assert rec.eligible is not None
+        assert rec.pressure_relative is not None

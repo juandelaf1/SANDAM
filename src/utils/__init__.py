@@ -5,6 +5,12 @@ from src.utils.scoring import (
     non_compensable_exclusions,
     relative_pressure,
 )
+from src.utils.eligibility import (
+    EligibilityCondition,
+    EligibilityResult,
+    evaluate_eligibility,
+    is_eligible,
+)
 from src.utils.recommendations import (
     generate_recommendations,
     generate_alerts,
@@ -29,6 +35,10 @@ __all__ = [
     "evaluate_beach",
     "non_compensable_exclusions",
     "relative_pressure",
+    "EligibilityCondition",
+    "EligibilityResult",
+    "evaluate_eligibility",
+    "is_eligible",
     "generate_recommendations",
     "generate_alerts",
     "get_safety_message",
