@@ -1,7 +1,13 @@
 openapi: 3.1.0
+# Changelog:
+#   0.2.0 (T005) — se hacen explícitos los campos `required` de los esquemas
+#     preservados (Recommendation/DondeIrResponse) y de nature/reason/type;
+#     `source` pasa a ser nullable; se extrae `EligibilityCondition`. Los campos
+#     aditivos permanecen opcionales. Sin cambios de comportamiento.
+#   0.1.0 — contrato inicial de la feature 001.
 info:
   title: SANDAM — Recomendación de playas (contrato)
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Contrato del endpoint de recomendación para la feature
     001-sustainable-beach-recommendation. Preserva el contrato existente (FR-010):
@@ -44,11 +50,12 @@ components:
       description: >
         Clasificación y procedencia de un valor (FR-004, FR-015). No sustituye a
         los campos actuales; los acompaña.
+      required: [nature]
       properties:
         nature:
           type: string
           enum: [observation, estimate, prediction, stale, unknown]
-        source: { type: string }
+        source: { type: [string, "null"] }
         observed_at: { type: [string, "null"], format: date-time }
         fetched_at: { type: [string, "null"], format: date-time }
         valid_until: { type: [string, "null"], format: date-time }
@@ -56,17 +63,40 @@ components:
     Explanation:
       type: object
       description: Motivo legible por el que una playa se propone o descarta (FR-006).
+      required: [reason]
       properties:
         reason: { type: string }
         factors:
           type: array
           items: { type: string }
 
+    EligibilityCondition:
+      type: object
+      description: Condición de exclusión detectada (FR-001).
+      required: [type, reason]
+      properties:
+        type: { type: string }
+        reason: { type: string }
+        source: { type: [string, "null"] }
+
     Recommendation:
       type: object
       description: >
         Recomendación por playa. Los campos existentes se conservan; los nuevos son
         aditivos.
+      required:
+        - nombre
+        - latitude
+        - longitude
+        - distancia_km
+        - tiempo_viaje_min
+        - hora_llegada
+        - score_original
+        - score_final
+        - status
+        - color
+        - sol_restante_min
+        - flags
       properties:
         # --- Contrato existente (se preserva) ---
         nombre: { type: string }
@@ -89,11 +119,7 @@ components:
           type: array
           description: Condiciones de exclusión detectadas (vacío si es elegible).
           items:
-            type: object
-            properties:
-              type: { type: string }
-              reason: { type: string }
-              source: { type: string }
+            $ref: "#/components/schemas/EligibilityCondition"
         pressure_relative:
           type: number
           description: Indicador de presión **relativa** (no umbral oficial) (FR-014).
@@ -107,6 +133,13 @@ components:
 
     DondeIrResponse:
       type: object
+      required:
+        - ubicacion_usuario
+        - hora_actual
+        - atardecer
+        - sol_restante
+        - total_playas
+        - recomendaciones
       properties:
         # --- Contrato existente (se preserva) ---
         ubicacion_usuario:

@@ -77,7 +77,27 @@ independientes.
   - **Decisión de diseño**: ADR 0005 (tipos portables, `NULL` = desconocido, `capacity_reference`
     como identificador textual de procedencia, regla como invariante del ORM en lugar de `CHECK` de
     BD). Limitación asumida: la regla no se garantiza para escrituras por SQL crudo.
-- [ ] T005 [P] Definir esquemas aditivos de respuesta en `src/schemas.py` (`DataQuality`, `Explanation`, `Recommendation`, `DondeIrResponse`) según `specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml`.
+- [x] T005 [P] Definir esquemas aditivos de respuesta en `src/schemas.py` (`DataQuality`, `Explanation`, `Recommendation`, `DondeIrResponse`) según `specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml`.
+  - **Definición de terminado (T005)**: los esquemas existen en `src/schemas.py` con los
+    nombres del contrato; los campos existentes se preservan y los aditivos son opcionales;
+    los enums coinciden con el contrato (`DataNature`, `PlayStatus`, `ResponseStatus`);
+    `nature`/`reason`/`type` son obligatorios y lo desconocido se representa con
+    `nature=unknown` (nunca por omisión de un valor favorable); el endpoint **no** cambia
+    (el cableado es T014/T018); tests de contrato en verde; lint y tests en verde.
+  - **Evidencia (2026-10-19)**: `src/schemas.py` con `DataNature`, `DataQuality`,
+    `Explanation`, `EligibilityCondition`, `PlayStatus`, `ResponseStatus`, `UserLocation`,
+    `Recommendation` y `DondeIrResponse`; 23 tests nuevos en `tests/test_donde_ir_schemas.py`
+    (validación, enums, nulos, paridad modelo↔contrato, aditivos opcionales, `unknown` no
+    favorable, serialización coherente con `exclude_none`, y la respuesta **actual** de
+    `/api/v1/donde-ir/ahora` validando contra `DondeIrResponse`); `ruff` OK; **64 tests OK**
+    (antes 41).
+  - **Cambio de contrato (justificado)**: se hicieron explícitos los `required` de los
+    esquemas (campos preservados de `Recommendation`/`DondeIrResponse`, más `nature`, `reason`,
+    `type`), coherente con FR-004/FR-006 y con la nota del propio contrato ("los campos
+    existentes se conservan; los nuevos son aditivos"); `source` pasa a
+    `[string, "null"]` (un valor desconocido no tiene procedencia que citar, FR-003); se
+    extrajo `EligibilityCondition` como esquema con nombre. Los campos aditivos siguen
+    opcionales. No cambia el comportamiento del endpoint. Versión del contrato: 0.2.0.
 - [ ] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).
 - [ ] T007 [P] Implementar tests unitarios del scoring canónico en `tests/test_scoring.py` (determinismo, límites, datos ausentes).
 - [ ] T008 Retirar la variante divergente `calculate_ideal_score` de `src/api/predictions.py` y eliminar `random` en `src/utils/predictions.py` (o marcar esas rutas como no-fiables y excluirlas de dato real).

@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Optional, List
+from enum import Enum
+from typing import Dict, List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from src.models import Tide, FlagColor, WaterQuality, DataStatus
@@ -149,3 +150,131 @@ class HealthResponse(BaseModel):
     status: str
     version: str = "1.0.0"
     timestamp: datetime
+
+
+# ---------------------------------------------------------------------------
+# Contrato aditivo de /donde-ir (tarea T005)
+#
+# Esquemas definidos conforme a
+# ``specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml``.
+# Alcance de T005: **solo** definir los esquemas de respuesta. No se cambia el
+# scoring, la elegibilidad ni la política de selección de alternativas, y estos
+# esquemas todavía **no** se conectan al endpoint (eso pertenece a T014/T018).
+# Ningún valor se inventa: lo desconocido se representa de forma explícita
+# (``nature=unknown`` / campos aditivos ausentes), nunca como condición favorable.
+# ---------------------------------------------------------------------------
+
+
+class DataNature(str, Enum):
+    """Naturaleza de un valor (contrato: ``DataQuality.nature``; FR-004)."""
+
+    observation = "observation"
+    estimate = "estimate"
+    prediction = "prediction"
+    stale = "stale"
+    unknown = "unknown"
+
+
+class DataQuality(BaseModel):
+    """Clasificación y procedencia de un valor (FR-004, FR-015).
+
+    ``nature`` es obligatorio: todo valor relevante declara su naturaleza y
+    ``unknown`` es un valor válido del enum, de modo que la ausencia de dato se
+    expresa explícitamente y nunca se interpreta como favorable (FR-003).
+    ``source`` puede faltar, porque un valor desconocido no tiene procedencia que
+    citar.
+    """
+
+    nature: DataNature
+    source: Optional[str] = None
+    observed_at: Optional[datetime] = None
+    fetched_at: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+
+
+class Explanation(BaseModel):
+    """Motivo legible por el que una playa se propone o descarta (FR-006)."""
+
+    reason: str
+    factors: List[str] = Field(default_factory=list)
+
+
+class EligibilityCondition(BaseModel):
+    """Condición de exclusión detectada (elemento de ``eligibility_conditions``)."""
+
+    type: str
+    reason: str
+    source: Optional[str] = None
+
+
+class PlayStatus(str, Enum):
+    """Estado de una playa en la recomendación (contrato: ``Recommendation.status``)."""
+
+    recomendada = "recomendada"
+    marginal = "marginal"
+    no_merece = "no_merece"
+
+
+class ResponseStatus(str, Enum):
+    """Estado global de la respuesta (contrato: ``DondeIrResponse.status``; FR-012)."""
+
+    ok = "ok"
+    no_suitable_alternatives = "no_suitable_alternatives"
+    insufficient_data = "insufficient_data"
+
+
+class UserLocation(BaseModel):
+    """Ubicación del usuario (contrato: ``DondeIrResponse.ubicacion_usuario``)."""
+
+    lat: float
+    lon: float
+
+
+class Recommendation(BaseModel):
+    """Recomendación por playa (contrato: ``Recommendation``).
+
+    Conserva íntegros los campos del contrato existente (FR-010) y añade los
+    campos aditivos, todos opcionales: mientras las tareas posteriores no los
+    calculen, se omiten y los clientes actuales siguen funcionando.
+    """
+
+    # --- Contrato existente (se preserva) ---
+    nombre: str
+    latitude: float
+    longitude: float
+    distancia_km: float
+    tiempo_viaje_min: int
+    hora_llegada: str
+    score_original: float
+    score_final: float
+    status: PlayStatus
+    color: str
+    sol_restante_min: int
+    flags: dict
+    # --- Aditivo (opcional) ---
+    eligible: Optional[bool] = None
+    eligibility_conditions: Optional[List[EligibilityCondition]] = None
+    pressure_relative: Optional[float] = None
+    explanation: Optional[Explanation] = None
+    data_quality: Optional[Dict[str, DataQuality]] = None
+
+
+class DondeIrResponse(BaseModel):
+    """Respuesta de ``/donde-ir/ahora`` (contrato: ``DondeIrResponse``).
+
+    Los campos existentes se preservan; los aditivos son opcionales. Mientras no
+    exista un cálculo de ruta real, ``travel_time_is_estimate`` es ``True`` por
+    defecto para no atribuir al tiempo de viaje una precisión que no tiene
+    (FR-013); T014 lo fijará de forma explícita.
+    """
+
+    # --- Contrato existente (se preserva) ---
+    ubicacion_usuario: UserLocation
+    hora_actual: str
+    atardecer: str
+    sol_restante: str
+    total_playas: int
+    recomendaciones: List[Recommendation]
+    # --- Aditivo (opcional) ---
+    status: Optional[ResponseStatus] = None
+    travel_time_is_estimate: bool = True
