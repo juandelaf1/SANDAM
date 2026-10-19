@@ -176,6 +176,18 @@ cobertura 1.0; la ordenación ya no depende de la ocupación.
 **Reversión**: cuando T012 aporte elegibilidad/vulnerabilidad/capacidad, y exista una fuente de
 procedencia para los servicios, ambos podrán reincorporarse como factores con criterios explícitos.
 
+**Hallazgo fuera del alcance corregido (no se toca en T006/T008)**: la ocupación sigue usándose como
+mérito en dos rutas **distintas** de `/donde-ir`:
+(a) `src/utils/recommendations.py` (servido por `/recommendations/*`) usa
+`beach.get("current_occupation", 0)`, con lo que una ocupación **desconocida** se presenta como
+favorable, y lista `"✓ Playa tranquila"` entre los méritos con `occupation < 50`;
+(b) `src/crud.search_beach_with_alternatives` (servido por `/search/*`) añade `"Ocupación menor"` a la
+lista de `improvements` de la alternativa propuesta.
+Es la misma tensión de FR-003/FR-007 que D2-ter, pero fuera del alcance de esta auditoría: cambiarlo
+alteraría el contenido de endpoints ajenos, así que se deja como **pendiente** para la tarea que
+revisite el motor, el contrato y el resto de rutas. La propiedad corregida (el score y el orden de
+`/donde-ir` no premian la baja afluencia) sí está cubierta por test.
+
 ### D3 — La baja ocupación no es un mérito por sí mismo
 
 **Decisión**: la ocupación se trata como **indicador de presión relativa**, no como "cuanto menos,
