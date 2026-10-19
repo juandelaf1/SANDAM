@@ -46,6 +46,8 @@ la herramienta estándar del stack y ya está declarada como dependencia.
   `create_all()` del arranque de la aplicación.
 - **Verificado sobre SQLite**: migración idéntica a los modelos (30 columnas, 5 índices),
   `alembic check` sin operaciones pendientes, `downgrade base` y `stamp head` correctos.
-- **No verificado contra PostgreSQL real**: el daemon de Docker no estaba disponible en el entorno;
-  sí se generó y revisó el SQL offline con dialecto PostgreSQL.
+- **Verificado sobre PostgreSQL 16.13 real (2026-10-19)**, en base dedicada y desechable: `upgrade
+  head` → `0001 (head)`; `alembic check` sin operaciones pendientes; `downgrade base` y re-`upgrade`
+  correctos; adopción mediante `stamp head` con `upgrade` posterior no-op; FastAPI conecta y consulta
+  la base migrada (`/health/ready` → `ready: true`) sin crear esquema en el arranque.
 

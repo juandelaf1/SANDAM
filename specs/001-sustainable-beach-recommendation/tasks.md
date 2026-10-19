@@ -50,7 +50,14 @@ independientes.
   - **Evidencia (2026-10-19)**: migración aplicada en SQLite idéntica a los modelos (30 columnas,
     5 índices); `alembic check` → "No new upgrade operations detected"; `downgrade base` OK;
     `stamp head` + `upgrade` no-op OK; SQL offline PostgreSQL válido; `ruff` OK; 32 tests OK.
-  - **Límite**: no verificado contra PostgreSQL real (Docker no disponible en el entorno).
+  - **Evidencia PostgreSQL (2026-10-19)**: contra PostgreSQL 16.13 real, en base dedicada y
+    desechable (`sandam_t003_test`): `upgrade head` → `0001 (head)`; tipos nativos correctos
+    (`uuid`, `varchar`, `double precision`, `boolean`, `timestamp without time zone`); 30 columnas,
+    PK `beaches_pkey`, índice único `ix_beaches_name` y 4 índices; `alembic check` sin operaciones
+    pendientes; `downgrade base` + re-`upgrade` OK; adopción (`stamp head` + `upgrade` no-op) OK;
+    FastAPI `/health/ready` → `ready: true` y consulta ORM OK.
+  - **Definición de terminado**: **satisfecha**, incluida la confirmación en PostgreSQL real.
+    Límite restante: automatizar la comprobación en CI (tarea **T028**).
 - [ ] T004 [P] Añadir campos de trazabilidad/capacidad a `src/models.py` (`protection_status`, `access_restrictions`, `capacity_reference`, `capacity_method`, `vulnerability_level`) y su migración `alembic/versions/0002_metadata_fields.py`. Regla: `capacity_reference` sin `capacity_method` es inválido.
 - [ ] T005 [P] Definir esquemas aditivos de respuesta en `src/schemas.py` (`DataQuality`, `Explanation`, `Recommendation`, `DondeIrResponse`) según `specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml`.
 - [ ] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).

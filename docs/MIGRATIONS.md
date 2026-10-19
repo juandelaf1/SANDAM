@@ -62,6 +62,10 @@ Procedimiento seguro:
 
    Y comparar con el esquema real de la base existente.
 
+   > **Aviso**: `alembic check` **no** sirve para esta comparación previa. Exige que la base esté
+   > marcada como al día y responde `Target database is not up to date` mientras no exista
+   > `alembic_version`. Compara los esquemas directamente (catálogo del motor) antes de decidir.
+
 2. **Si los esquemas son equivalentes** → marcar la base como ya migrada, sin recrear tablas:
 
    ```bash
@@ -105,6 +109,21 @@ alembic downgrade base  # deshace todas las revisiones
 - El esquema creado por `alembic upgrade head` debe coincidir con el declarado en `src/models.py`.
 - `alembic downgrade base` debe dejar la base vacía de objetos de la revisión.
 - Automatizar esta comparación en CI es la tarea **T028** del plan; todavía pendiente.
+
+### Estado de verificación (2026-10-19)
+
+Comprobado contra **PostgreSQL 16.13** real, en una base dedicada y desechable
+(`sandam_t003_test`, eliminada tras las pruebas):
+
+- `alembic upgrade head` → revisión `0001 (head)`; tabla `beaches` con 30 columnas y tipos nativos
+  (`uuid`, `varchar`, `double precision`, `boolean`, `timestamp without time zone`), PK
+  `beaches_pkey`, índice único `ix_beaches_name` y 4 índices; sin claves foráneas.
+- `alembic check` → *No new upgrade operations detected*.
+- `alembic downgrade base` → elimina `beaches`; el `upgrade head` posterior la restaura.
+- Adopción de esquema existente: `create_all` → `alembic stamp head` → `upgrade head` no-op.
+  (Una divergencia introducida a propósito —columna de más— **sí** es detectada por `alembic check`.)
+- FastAPI arranca contra la base migrada: `/health/ready` → `ready: true` y consulta ORM correcta,
+  sin crear ni alterar el esquema desde el ciclo de vida de la aplicación.
 
 ## 7. Crear una nueva migración
 
