@@ -76,11 +76,10 @@ async def donde_ir_ahora_endpoint(
     sol = calcular_sol_restante()
 
     # Estado global (FR-012): si no hay ninguna recomendacion elegible, se declara.
-    if not recomendaciones and playas_con_score:
-        # Distinguir: sin datos suficientes vs sin alternativas adecuadas.
-        any_insufficient = any(
-            p.get("score") is None for p in playas_con_score
-        )
+    if not playas_con_score:
+        status = "insufficient_data"
+    elif not recomendaciones:
+        any_insufficient = any(p.get("score") is None for p in playas_con_score)
         status = "insufficient_data" if any_insufficient else "no_suitable_alternatives"
     elif recomendaciones:
         status = "ok"

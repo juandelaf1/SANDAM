@@ -233,7 +233,11 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
     `DondeIrResponse`/`Recommendation`; campos preservados presentes y no nulos; aditivos
     (`eligible`, `travel_time_is_estimate`) presentes; playa excluida omitida de recomendaciones.
     Verificado: 2/2 OK.
-- [ ] T011 [P] [US1] Integration test de elegibilidad, no-compensación por comodidad y no-promoción de la baja afluencia en `tests/test_recommendation.py`.
+- [x] T011 [P] [US1] Integration test de elegibilidad, no-compensación por comodidad y no-promoción de la baja afluencia en `tests/test_recommendation.py`.
+  - **Evidencia (2026-10-19)**: `tests/test_recommendation.py` (4 casos): playa con bandera roja no
+    recomendada; playa perfecta pero cerrada no promovida (FR-002); dos playas idénticas salvo
+    ocupación (5 vs 95) obtienen el mismo `score_original` y `pressure_relative` refleja la
+    diferencia; campos aditivos presentes y válidos. Verificado: 4/4 OK.
 
 ### Implementation for User Story 1
 
@@ -260,13 +264,9 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
     (ok/no_suitable_alternatives/insufficient_data), `travel_time_is_estimate: true`. Los campos
     aditivos por recomendación (`eligible`, `eligibility_conditions`, `pressure_relative`) se
     propagan. `data_quality` queda pendiente de T018 (no se inventa).
-- [x] T011 [P] [US1] Integration test de elegibilidad, no-compensación por comodidad y
-  no-promoción de la baja afluencia en `tests/test_recommendation.py`.
-  - **Evidencia (2026-10-19)**: `tests/test_recommendation.py` (4 casos): playa con bandera roja no
-    recomendada; playa perfecta pero cerrada no promovida (FR-002); dos playas idénticas salvo
-    ocupación (5 vs 95) obtienen el mismo `score_original` y `pressure_relative` refleja la
-    diferencia; campos aditivos presentes y válidos. Verificado: 4/4 OK.
-
+- [x] T015 [US1] Añadir validación y manejo de errores en `src/api/donde_ir.py` (parámetros inválidos, BD sin datos).
+  - **Evidencia (2026-10-19)**: parámetros con validación Pydantic (lat/lon ge/le, incluir_marginales bool).
+    BD sin datos → `status: "insufficient_data"` en lugar de error 500. Verificado: ruff OK.
 **Checkpoint**: US1 funcional y probable de forma independiente → MVP.
 
 ---
