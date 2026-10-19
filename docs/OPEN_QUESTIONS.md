@@ -132,6 +132,22 @@ técnica arbitraria.
 - **Decisión temporal segura**: no persistir ubicaciones individuales; registrar solo agregados
   anónimos si llega a hacerse.
 
+#### Q26 — Distinguir "servicio no disponible" de "servicio no documentado"
+- **Qué necesitamos saber**: cómo representar en el modelo que un servicio (socorrista, sombra,
+  aparcamiento, ducha, kiosco, accesibilidad) **no consta**, frente a "consta que no lo hay".
+- **Por qué afecta**: hoy estos campos son booleanos con valor por defecto `False`, por lo que el
+  scoring canónico (T006) no puede distinguir "no disponible" de "no documentado" y trata ambos como
+  "no disponible" (FR-003 advierte que lo desconocido no debe tratarse como un valor). Afecta a la
+  justicia de la comparación entre playas con distinto grado de documentación.
+- **Evidencia que la resuelve**: decidir si estos campos pasan a `NULL` (desconocido) con `False`
+  explícito cuando conste la ausencia, o si se añade un flag de procedencia por servicio; y confirmar
+  la fuente que documenta la ausencia.
+- **Bloquea**: afinar el factor `services` del score canónico. **No** bloquea el MVP (peso 0.15 y
+  limitación documentada en `research.md` §D2-bis).
+- **Cuándo**: al definir la trazabilidad de cada campo (FR-015), en Fase B.
+- **Decisión temporal segura**: documentar la limitación y no presentar el factor como una medición
+  precisa; revisar el peso cuando el modelo exprese el desconocido.
+
 ### Fuentes y permisos
 
 #### Q13 — Condiciones de uso de las fuentes públicas de ocupación

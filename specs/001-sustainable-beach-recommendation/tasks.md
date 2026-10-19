@@ -98,8 +98,58 @@ independientes.
     `[string, "null"]` (un valor desconocido no tiene procedencia que citar, FR-003); se
     extrajo `EligibilityCondition` como esquema con nombre. Los campos aditivos siguen
     opcionales. No cambia el comportamiento del endpoint. Versión del contrato: 0.2.0.
-- [ ] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).
-- [ ] T007 [P] Implementar tests unitarios del scoring canónico en `tests/test_scoring.py` (determinismo, límites, datos ausentes).
+- [x] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).
+  - **Definición de terminado (T006)**: existe **una única** implementación canónica de la
+    puntuación de playa en `src/utils/scoring.py`; las variantes divergentes que viven **dentro de
+    ese módulo** y en sus exportaciones (`src/utils/__init__.py`) se retiran. La variante divergente
+    `calculate_ideal_score` de `src/api/predictions.py` **no** forma parte de T006 y se retira en
+    **T008** (alcance declarado, no ocultado). Cada peso y
+    umbral está documentado con su justificación (Principio IV) y registrado en `research.md`
+    (D2-bis); se respetan el modelo en dos etapas (D1) y la no compensabilidad de las exclusiones
+    (FR-002); lo desconocido no se representa como favorable (FR-003); la baja ocupación no se trata
+    como mérito (D3/FR-007/FR-014); el cálculo es determinista (FR-008); el contrato de la API no
+    cambia; lint y tests en verde.
+  - **Evidencia (2026-10-19)**: `src/utils/scoring.py` reescrito como módulo canónico:
+    `CANONICAL_WEIGHTS` (calidad 0.30, oleaje 0.20, presión relativa 0.20, UV 0.15, servicios 0.15,
+    suma 1.0), `MIN_DATA_COVERAGE = 0.5`, `PRESSURE_LABEL`, bandas documentadas de oleaje/UV,
+    `BeachScore`, `evaluate_beach()`, `calculate_overall_score()`, `relative_pressure()`,
+    `non_compensable_exclusions()`. Se retiraron `calculate_flag_score`, `calculate_jellyfish_score`,
+    `calculate_safety_score`, `calculate_comfort_score`, `calculate_uv_score`, `calculate_wave_score`
+    y `calculate_occupation_score` (implementaciones divergentes o absorbidas por el canónico), y se
+    actualizó `src/utils/__init__.py` en consecuencia. Los cuatro consumidores reales
+    (`src/api/donde_ir.py`, `src/utils/recommendation_engine.py`, `src/crud.py`) siguen funcionando:
+    el tipo de retorno pasa a `Optional[float]` y `None` (desconocido) **no** se sustituye por un
+    valor inventado; en el motor esas playas no se ordenan ni se recomiendan (FR-003/FR-012) y en
+    `crud` van al final del orden (mismo criterio). Verificado: `ruff` OK; **102 tests OK**
+    (antes 64); `pyyaml` no aplica aquí. El contrato de la API no cambia (`/donde-ir/ahora` conserva
+    la forma de su respuesta; sólo cambian los valores del score, que ya visiblemente son una
+    estimación de idoneidad).
+  - **Registro de decisión**: `specs/001-.../research.md` §D2-bis (pesos, umbral de cobertura,
+    justificación y alternativas descartadas).
+  - **Puente explícito hacia T012**: las condiciones de seguridad de la propia playa (bandera roja,
+    medusas) se aplican aquí como exclusiones **no compensables** en un único lugar; la etapa de
+    elegibilidad completa (restricciones oficiales, incompatibilidad ambiental, datos insuficientes,
+    capacidad/vulnerabilidad) y su exposición en `eligibility_conditions` pertenecen a T012. El
+    término `services` arrastra una limitación conocida (el modelo no distingue "no disponible" de
+    "no documentado"); se registra en `docs/OPEN_QUESTIONS.md` (Q26).
+  - **Alcance declarado (lo que T006 NO hace)**: siguen existiendo dos copias divergentes que no se
+    tocan aquí: `calculate_ideal_score` en `src/api/predictions.py` (se retira en **T008**) y una
+    copia en el notebook no versionado `notebooks/dashboard_sandam_2026.py` (fuera del repositorio
+    versionado). Hasta T008 no puede afirmarse que *todo* el repositorio tenga una sola fórmula; sí
+    que el **sistema canónico** (`src/utils/scoring.py` y sus consumidores) tiene una sola.
+- [x] T007 [P] Implementar tests unitarios del scoring canónico en `tests/test_scoring.py` (determinismo, límites, datos ausentes).
+  - **Definición de terminado (T007)**: hay tests unitarios del scoring canónico que cubren
+    determinismo, límites (bandas y rango 0..100) y datos ausentes; no se suprimen pruebas
+    existentes para que pasen; lint y tests en verde.
+  - **Evidencia (2026-10-19)**: `tests/test_scoring.py` nuevo (38 casos: 13 funciones + 20
+    parametrizados de bandas + 5 de servicios/presión), incluyendo determinismo (50 repeticiones con
+    el mismo resultado), rango acotado sobre una rejilla de entradas, `None` para calidad/oleaje/UV
+    desconocidos y para cobertura insuficiente, exclusión no compensable de bandera roja incluso en
+    una playa "perfecta" y con ocupación 0, bandas de oleaje/UV en sus límites exactos, y presión
+    relativa desconocida ≠ 0. En `tests/test_utils.py` se adaptaron las 4 pruebas de scoring al
+    comportamiento canónico (bandera roja y medusas como exclusiones; calidad `unknown` → `None`;
+    score acotado en lugar del valor exacto 100). Fixtures sintéticas, etiquetadas como tales.
+    Verificado: `ruff` OK; **102 tests OK** (antes 64).
 - [ ] T008 Retirar la variante divergente `calculate_ideal_score` de `src/api/predictions.py` y eliminar `random` en `src/utils/predictions.py` (o marcar esas rutas como no-fiables y excluirlas de dato real).
 - [ ] T009 [P] Implementar tests que garanticen ausencia de aleatoriedad en rutas de dato en `tests/test_no_random.py`.
 

@@ -168,7 +168,13 @@ async def get_best_beaches_nearby(
     for beach in beaches:
         beach["score"] = calculate_overall_score(beach)
 
-    return sorted(beaches, key=lambda x: x.get("score", 0), reverse=True)[:limit]
+    # `score` may be None (unknown data or a non-compensable condition, T006);
+    # such beaches go last instead of receiving an invented value (FR-003).
+    def _sort_key(item: dict) -> float:
+        score = item.get("score")
+        return score if score is not None else -1.0
+
+    return sorted(beaches, key=_sort_key, reverse=True)[:limit]
 
 
 async def search_beach_with_alternatives(

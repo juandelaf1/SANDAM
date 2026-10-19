@@ -9,31 +9,31 @@ from src.utils.recommendation_engine import (
 )
 from src.utils.recommendations import generate_recommendations
 from src.utils.scoring import (
-    calculate_flag_score,
-    calculate_jellyfish_score,
     calculate_overall_score,
     calculate_quality_score,
+    non_compensable_exclusions,
 )
-
-
-def test_flag_score_accepts_enum_and_string():
-    assert calculate_flag_score(FlagColor.green) == 100.0
-    assert calculate_flag_score("green") == 100.0
-    assert calculate_flag_score(FlagColor.red) == 0.0
 
 
 def test_quality_score_accepts_enum_and_string():
     assert calculate_quality_score(WaterQuality.excellent) == 100.0
     assert calculate_quality_score("poor") == 0.0
+    assert calculate_quality_score("unknown") is None
 
 
-def test_jellyfish_score():
-    assert calculate_jellyfish_score(False) == 100.0
-    assert calculate_jellyfish_score(True) == 0.0
+def test_red_flag_is_a_non_compensable_exclusion():
+    assert non_compensable_exclusions({"flag_color": FlagColor.red})
+    assert non_compensable_exclusions({"flag_color": "red"})
+    assert non_compensable_exclusions({"flag_color": "green"}) == ()
+
+
+def test_jellyfish_is_a_non_compensable_exclusion():
+    assert non_compensable_exclusions({"jellyfish_present": True})
+    assert non_compensable_exclusions({"jellyfish_present": False}) == ()
 
 
 def test_overall_score_is_bounded():
-    perfect = {
+    good = {
         "flag_color": "green",
         "current_occupation": 10,
         "water_quality": "excellent",
@@ -41,7 +41,9 @@ def test_overall_score_is_bounded():
         "uv_index": 2,
         "wave_height": 0.2,
     }
-    assert calculate_overall_score(perfect) == 100.0
+    score = calculate_overall_score(good)
+    assert score is not None
+    assert 0.0 <= score <= 100.0
 
 
 def test_haversine_zero_for_same_point():

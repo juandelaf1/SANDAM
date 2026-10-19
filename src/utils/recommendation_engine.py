@@ -160,8 +160,12 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
         tipo_carretera = determinar_tipo_carretera(distancia)
         tiempo_viaje = calcular_tiempo_viaje(distancia, tipo_carretera)
         
-        # Score de la playa
-        score = playa.get("score", 50)
+        # Score canónico (T006). `None` = desconocido o con una condición no
+        # compensable: no se ordena ni se recomienda, en lugar de asignarle un
+        # valor inventado (FR-003, FR-012). Lo desconocido no es favorable.
+        score = playa.get("score")
+        if score is None:
+            continue
         
         # Determinar status
         if tiempo_viaje < (sol_restante_min - buffer_min):

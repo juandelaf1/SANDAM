@@ -84,6 +84,43 @@ fórmulas propias.
 **Alternativas**: mantener dos fórmulas con documentación cruzada — descartada: no resuelve la
 divergencia.
 
+#### D2-bis — Pesos y umbrales del scoring canónico (implementado en T006)
+
+**Decisión**: el score canónico de comparación (etapa 2 de D1) se define en `src/utils/scoring.py`
+con **cinco factores y pesos explícitos** que suman 1.0:
+
+| factor | peso | justificación (decisión de producto, no umbral científico) |
+|---|---|---|
+| `water_quality` | 0.30 | Única variable ambiental con fuente oficial verificable (calidad de aguas de baño) y la más relevante para decidir el baño. |
+| `sea_state` (oleaje) | 0.20 | El estado de la mar condiciona la seguridad y la viabilidad de la actividad en el momento de uso. |
+| `relative_pressure` (ocupación) | 0.20 | Entre playas elegibles la comparación debe preferir la de menor presión relativa (D3). Es un indicador relativo, nunca capacidad oficial. |
+| `solar_exposure` (UV) | 0.15 | El calor/exposición solar es una dimensión central de la decisión; se usa el UV disponible como proxy. No es una valoración médica. |
+| `services` | 0.15 | Accesibilidad y servicios verificados determinan el esfuerzo y la comodidad de la visita. |
+
+**Umbral de cobertura**: `MIN_DATA_COVERAGE = 0.5`. Por debajo, el score es `None` ("desconocido"):
+el resultado combinaría más incógnitas que datos y aparentaría una confianza inexistente (FR-003,
+FR-012). Un factor sin dato **no** aporta puntos ni se sustituye por un valor inventado; se omite y
+el peso se renormaliza entre los factores conocidos, y la fracción de peso con dato se expone como
+`coverage`.
+
+**Rationale**: Principio IV exige justificar y registrar cada peso/umbral; el Principio II prohíbe
+que lo desconocido se represente como favorable (hoy `uv_index=None → 75.0` y `wave_height=None →
+75.0` inventaban un valor). Los pesos son una **decisión de producto explícita y revisable**, no
+límites ecológicos ni capacidades.
+
+**Alternativas**: (a) conservar los pesos históricos de `calculate_overall_score`
+(bandera 0.30, ocupación 0.25, calidad 0.20, medusas 0.15, UV 0.05, oleaje 0.05) — descartada:
+hace compensable una prohibición (bandera roja con 0.30 se compensa con el resto) y contradice FR-002;
+(b) mantener el valor inventado `75.0` para UV/oleaje ausentes — descartada: representa lo
+desconocido como favorable.
+
+**Límite explícito**: las condiciones de seguridad evidentes en la playa (bandera roja, medusas)
+se tratan aquí como **exclusiones no compensables** (`non_compensable_exclusions`). Es un puente
+hacia la etapa de elegibilidad completa (T012, `src/utils/eligibility.py`), que leerá además
+restricciones oficiales, incompatibilidad ambiental y datos insuficientes desde las observaciones y
+las expondrá en `eligibility_conditions`. Se mantiene en un único lugar para no duplicar la regla
+(Principio IV).
+
 ### D3 — La baja ocupación no es un mérito por sí mismo
 
 **Decisión**: la ocupación se trata como **indicador de presión relativa**, no como "cuanto menos,

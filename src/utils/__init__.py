@@ -1,7 +1,9 @@
 from src.utils.scoring import (
+    BeachScore,
     calculate_overall_score,
-    calculate_safety_score,
-    calculate_comfort_score
+    evaluate_beach,
+    non_compensable_exclusions,
+    relative_pressure,
 )
 from src.utils.recommendations import (
     generate_recommendations,
@@ -22,9 +24,11 @@ from src.utils.fallback import (
 )
 
 __all__ = [
+    "BeachScore",
     "calculate_overall_score",
-    "calculate_safety_score",
-    "calculate_comfort_score",
+    "evaluate_beach",
+    "non_compensable_exclusions",
+    "relative_pressure",
     "generate_recommendations",
     "generate_alerts",
     "get_safety_message",
