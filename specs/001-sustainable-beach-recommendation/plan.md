@@ -51,7 +51,7 @@ compatibilidad del contrato actual de la API de recomendación; determinismo del
 | IV. Scoring canónico único | Un único módulo canónico; se eliminan/desactivan las variantes divergentes |
 | V. SDD | Este plan deriva de la spec 001 y de la constitución |
 | VI. Verificación/determinismo | Tareas de tests incluidas (dominio, contrato, datos ausentes, exclusiones, determinismo) |
-| VII. Migraciones explícitas | **Nuevos campos de cuatro metadatos requieren migración Alembic** (ADR 0003) |
+| VII. Migraciones explícitas | **Los nuevos campos de metadatos requieren migración Alembic** (ADR 0003) |
 | VIII. Secretos/privacidad | No se introducen datos personales; no se tocan credenciales |
 | IX. Simplicidad | Sin nuevas dependencias; reutiliza la arquitectura existente |
 

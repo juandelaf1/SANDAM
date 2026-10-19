@@ -1,7 +1,20 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Index, Uuid
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    String,
+    Text,
+    Uuid,
+    event,
+)
+from sqlalchemy.orm import Session
+
 from src.database import Base
 
 
@@ -35,6 +48,14 @@ class DataStatus(str, Enum):
     live = "live"
     estimated = "estimated"
     unavailable = "unavailable"
+
+
+class CapacityProvenanceError(ValueError):
+    """`capacity_reference` was recorded without `capacity_method` (T004 rule).
+
+    A capacity figure/reference without a documented method would look like a
+    validated capacity, which the product must never imply (FR-014; ADR 0002).
+    """
 
 
 class Beach(Base):
@@ -75,6 +96,18 @@ class Beach(Base):
     has_accessibility = Column(Boolean, default=False)
     has_lifeguard = Column(Boolean, default=False)
 
+    # --- Metadatos documentados de capacidad y sensibilidad (tarea T004) ---
+    # Todos anulables a propósito: NULL = "desconocido / no documentado". Nunca
+    # un valor por defecto que afirme que la playa no está protegida, no tiene
+    # restricciones o presenta riesgo bajo (FR-003, FR-014; ADR 0002/0005).
+    # `access_restrictions` describe restricciones documentadas, NO su vigencia
+    # en tiempo real (esa verificación pertenece al modelo de observaciones).
+    protection_status = Column(String(100), nullable=True)
+    access_restrictions = Column(Text, nullable=True)
+    capacity_reference = Column(String(255), nullable=True)
+    capacity_method = Column(String(255), nullable=True)
+    vulnerability_level = Column(String(50), nullable=True)
+
     data_status = Column(String(20), default=DataStatus.unavailable.value)
 
     created_at = Column(DateTime, default=utcnow)
@@ -86,3 +119,26 @@ class Beach(Base):
         Index("idx_beach_flag", "flag_color"),
         Index("idx_beach_quality", "water_quality"),
     )
+
+
+@event.listens_for(Session, "before_flush")
+def _enforce_capacity_provenance(session: Session, flush_context, instances) -> None:
+    """Rule T004: `capacity_reference` without `capacity_method` is invalid.
+
+    Checked on flush rather than with ``@validates`` because it is a
+    cross-field invariant: setting the two attributes in either order (as the
+    ORM constructor does) must not raise a false positive, while partial
+    updates must still be validated against the resulting state.
+
+    It is intentionally **not** a database CHECK constraint: adding one to an
+    existing table is not supported by SQLite, and dropping a column referenced
+    by it would force a full table rebuild (see ADR 0005).
+    """
+    for obj in list(session.new) + list(session.dirty):
+        if isinstance(obj, Beach) and obj.capacity_reference is not None:
+            if obj.capacity_method is None:
+                raise CapacityProvenanceError(
+                    "capacity_reference requiere capacity_method "
+                    "(procedencia/metodología); no se admite una capacidad de "
+                    "referencia sin su método"
+                )

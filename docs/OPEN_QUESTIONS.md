@@ -79,3 +79,17 @@ Cuando se resuelva, se traslada a un ADR o a una especificación.
 - **Relacionada con**: Restricciones de Producto.
 - **Bloquea**: nada inmediato; explícitamente fuera del MVP.
 - **Necesita**: especificación propia antes de implementar cualquier elemento.
+
+## Q10 — Catálogos documentados de protección y vulnerabilidad
+
+- **Relacionada con**: T004 (`protection_status`, `vulnerability_level`), FR-007, ADR 0005.
+- **Bloquea**: asignar valores a `protection_status` y `vulnerability_level`: hoy no existe una
+  clasificación documentada (figuras de protección, sensibilidad ecológica, niveles de
+  vulnerabilidad) con la que poblarlas sin inventar. Las columnas se dejan `NULL` = desconocido.
+- **Necesita**: identificar las figuras/niveles aplicables y su fuente (planes de gestión,
+  normativa, cartografía de posidonia, etc.) y decidir si se modelan como catálogo cerrado
+  (entonces habría que valorar `ENUM` y su migración).
+- **Responsable**: producto (con apoyo de fuentes oficiales).
+- **Nota**: `capacity_reference` y `capacity_method` dependen de Q1; `access_restrictions` describe
+  restricciones **documentadas**, no su vigencia en tiempo real (esa verificación requiere el
+  modelo de observaciones y una fuente oficial, Q2/Q4).

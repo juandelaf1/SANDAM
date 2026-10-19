@@ -22,20 +22,28 @@ Alembic — ADR 0003). No se implementa en esta fase.
 | `has_kiosk` / `has_shade` / `has_showers` / `has_parking` / `has_accessibility` / `has_lifeguard` | Boolean | servicios disponibles |
 | `created_at` / `last_updated` | DateTime | automáticos |
 
-**Nuevo** (para elegibilidad y capacidad con fundamento):
+**Nuevo** (para elegibilidad y capacidad con fundamento) — **implementado en T004**
+(`src/models.py`, migración `alembic/versions/0002_metadata_fields.py`; ver ADR 0005):
 
-| Campo | Tipo | Regla |
-|-------|------|-------|
-| `protection_status` | String | nullable; régimen de protección/sensibilidad documentado |
-| `access_restrictions` | Text/JSON | nullable; restricciones de acceso/uso documentadas |
-| `capacity_reference` | Integer | nullable; capacidad de referencia **solo si existe fuente** |
-| `capacity_method` | String | nullable; metodología/fuente de `capacity_reference` |
-| `vulnerability_level` | String/Enum | nullable; vulnerabilidad estimada documentada |
+| Campo | Tipo final | Regla |
+|-------|------------|-------|
+| `protection_status` | `VARCHAR(100)` | nullable; régimen de protección/sensibilidad documentado. Sin catálogo validado todavía → `NULL` = desconocido |
+| `access_restrictions` | `TEXT` | nullable; restricciones de acceso/uso **documentadas** (no su vigencia en tiempo real) |
+| `capacity_reference` | `VARCHAR(255)` | nullable; **identificador/cita de la referencia o procedencia** que respalda la capacidad (la cifra, si existe, vive en `max_capacity`) |
+| `capacity_method` | `VARCHAR(255)` | nullable; metodología con la que se obtuvo esa referencia |
+| `vulnerability_level` | `VARCHAR(50)` | nullable; nivel de vulnerabilidad **documentado**. Sin clasificación validada → `NULL` = desconocido |
 
 **Reglas**:
 
+- `NULL` en cualquiera de los cinco campos significa **desconocido / no documentado**. No hay
+  defaults: la ausencia de dato no afirma que la playa no esté protegida, no tenga restricciones
+  o presente riesgo bajo (FR-003, FR-014; ADR 0002/0005).
 - `capacity_reference` MUST NOT rellenarse sin `capacity_method`. Si no hay fuente defendible, ambos
-  quedan nulos y el sistema reconoce la incertidumbre (FR-014).
+  quedan nulos y el sistema reconoce la incertidumbre (FR-014). Se aplica como **invariante del
+  modelo** en `src/models.py` (excepción `CapacityProvenanceError`), no como `CHECK` de BD
+  (ver ADR 0005 y sus limitaciones).
+- No se usan `ENUM` nativos ni `JSON/JSONB`: tipos portables entre PostgreSQL y SQLite.
+- Estos campos **no** se exponen todavía en los esquemas Pydantic ni en la API (decisión de T004).
 - `region` MUST ser `"Mallorca"` en el alcance actual (Principio de alcance).
 
 ## 2. Observación (Observation) — **nuevo**

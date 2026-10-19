@@ -58,7 +58,25 @@ independientes.
     FastAPI `/health/ready` → `ready: true` y consulta ORM OK.
   - **Definición de terminado**: **satisfecha**, incluida la confirmación en PostgreSQL real.
     Límite restante: automatizar la comprobación en CI (tarea **T028**).
-- [ ] T004 [P] Añadir campos de trazabilidad/capacidad a `src/models.py` (`protection_status`, `access_restrictions`, `capacity_reference`, `capacity_method`, `vulnerability_level`) y su migración `alembic/versions/0002_metadata_fields.py`. Regla: `capacity_reference` sin `capacity_method` es inválido.
+- [x] T004 [P] Añadir campos de trazabilidad/capacidad a `src/models.py` (`protection_status`, `access_restrictions`, `capacity_reference`, `capacity_method`, `vulnerability_level`) y su migración `alembic/versions/0002_metadata_fields.py`. Regla: `capacity_reference` sin `capacity_method` es inválido.
+  - **Definición de terminado (T004)**: los cinco campos existen en `src/models.py`; la migración
+    `0002` (dependiente de `0001`) los añade sin reconstruir `beaches` ni perder filas; son
+    anulables y sin defaults (`NULL` = desconocido); la regla `capacity_reference ⇒ capacity_method`
+    se aplica y está probada; el contrato de la API no cambia; `alembic check` sin operaciones
+    pendientes; lint y tests en verde.
+  - **Evidencia (2026-10-19)**: `0002` aplicada en PostgreSQL 16.13 real (base dedicada y desechable
+    `sandam_t004_test`): `0001 → 0002`, 35 columnas, 5 nuevas anulables con tipos nativos
+    (`character varying`/`text`) y sin defaults; fila previa a T004 conservada con metadatos `NULL`
+    (no inventados); actualización posterior con valores explícitos OK; `downgrade -1` elimina solo
+    las 5 columnas conservando la fila, y el `upgrade head` posterior la restaura; `alembic check`
+    sin operaciones pendientes; FastAPI arranca sin alterar el esquema y consulta la base; la regla
+    del modelo rechaza `capacity_reference` sin `capacity_method` en PostgreSQL
+    (`CapacityProvenanceError`).
+  - **Evidencia en CI (SQLite)**: 9 tests nuevos (`tests/test_beach_metadata.py`,
+    `tests/test_migrations.py`) → 41 tests OK; `ruff` OK.
+  - **Decisión de diseño**: ADR 0005 (tipos portables, `NULL` = desconocido, `capacity_reference`
+    como identificador textual de procedencia, regla como invariante del ORM en lugar de `CHECK` de
+    BD). Limitación asumida: la regla no se garantiza para escrituras por SQL crudo.
 - [ ] T005 [P] Definir esquemas aditivos de respuesta en `src/schemas.py` (`DataQuality`, `Explanation`, `Recommendation`, `DondeIrResponse`) según `specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml`.
 - [ ] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).
 - [ ] T007 [P] Implementar tests unitarios del scoring canónico en `tests/test_scoring.py` (determinismo, límites, datos ausentes).
