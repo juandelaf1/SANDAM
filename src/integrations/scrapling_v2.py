@@ -1,7 +1,6 @@
 """SANDAM 2026 - SCRAPLING Integration (API v0.4.x)"""
 
 from scrapling import Fetcher, StealthyFetcher
-from scrapling.parser import Selector
 from typing import List, Dict
 from datetime import datetime
 import json
@@ -77,7 +76,7 @@ class MedusAppData:
                     if r.status_code == 200:
                         results = r.json()
                         break
-                except:
+                except Exception:
                     continue
                     
         except Exception as e:

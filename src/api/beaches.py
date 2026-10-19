@@ -38,7 +38,8 @@ async def list_beaches(
         has_lifeguard, has_shade, occupation_min, occupation_max
     )
     total = await crud.get_beaches_count(
-        db, region, flag_color, water_quality
+        db, region, flag_color, water_quality,
+        has_lifeguard, has_shade, occupation_min, occupation_max
     )
     return {"total": total, "beaches": beaches}
 

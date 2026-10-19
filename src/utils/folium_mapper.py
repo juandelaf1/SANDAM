@@ -3,7 +3,6 @@
 import folium
 from folium.plugins import MarkerCluster, HeatMap
 from pathlib import Path
-import json
 
 
 BEACH_DATA = [

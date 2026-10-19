@@ -7,7 +7,7 @@ Scrapes real-time data from:
 """
 
 from scrapling import Fetcher, StealthyFetcher
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime
 import json
 from pathlib import Path
@@ -68,7 +68,7 @@ class UIBBeachCamScraper:
                                         "source": "UIB_BeachCam",
                                         "timestamp": datetime.now().isoformat()
                                     })
-                            except:
+                            except Exception:
                                 continue
                         
                         if results:
@@ -82,7 +82,7 @@ class UIBBeachCamScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(results, f)
-            except:
+            except Exception:
                 pass
         
         return results
@@ -122,7 +122,7 @@ class MedusAppScraper:
                         elif isinstance(data, dict):
                             results = data.get("sightings", data.get("data", []))
                         break
-                except:
+                except Exception:
                     continue
             
             # Fallback to web scraping
@@ -141,7 +141,7 @@ class MedusAppScraper:
                                 "species": species.strip() if species else "Unknown",
                                 "date": date.strip() if date else datetime.now().isoformat()
                             })
-                        except:
+                        except Exception:
                             continue
         
         except Exception as e:
@@ -152,7 +152,7 @@ class MedusAppScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(results, f)
-            except:
+            except Exception:
                 pass
         
         return results
@@ -205,9 +205,12 @@ class PlatgesBalearsScraper:
                                 flag_classes = elem.css(".flag, .status, [class*='flag']").get_first(default=None)
                                 if flag_classes:
                                     class_str = str(flag_classes.attrib.get("class", ""))
-                                    if "green" in class_str: flag = "green"
-                                    elif "yellow" in class_str: flag = "yellow"
-                                    elif "red" in class_str: flag = "red"
+                                    if "green" in class_str:
+                                        flag = "green"
+                                    elif "yellow" in class_str:
+                                        flag = "yellow"
+                                    elif "red" in class_str:
+                                        flag = "red"
                                 
                                 # Occupation
                                 occ = elem.css("[class*='occup'], .fill, .percentage").get_first(default="")
@@ -221,7 +224,7 @@ class PlatgesBalearsScraper:
                                         "source": "Platges_Balears",
                                         "timestamp": datetime.now().isoformat()
                                     })
-                            except:
+                            except Exception:
                                 continue
                         
                         if results:
@@ -235,7 +238,7 @@ class PlatgesBalearsScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(results, f)
-            except:
+            except Exception:
                 pass
         
         return results

@@ -1,11 +1,9 @@
 """Alert and Emergency Data Integration for SANDAM"""
 
-import requests
-from typing import List, Dict, Any
+from typing import List, Dict
 from datetime import datetime, timedelta
 from pathlib import Path
 import json
-import math
 
 
 CACHE_DIR = Path("data/cache")
@@ -135,10 +133,6 @@ class AirQualityClient:
 def get_comprehensive_beach_data(beach_name: str, lat: float, lon: float) -> Dict:
     """Get all external data for a beach"""
     alert_system = AlertSystem()
-    govern_client = None
-
-    from src.integrations.govern_data_client import GovernDataClient
-    govern_client = GovernDataClient()
 
     return {
         "beach": beach_name,

@@ -2,8 +2,7 @@
 
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point, Polygon
-from shapely.ops import unary_union
+from shapely.geometry import Point
 from pathlib import Path
 
 

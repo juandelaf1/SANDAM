@@ -3,15 +3,11 @@
 import requests
 from typing import Optional, Dict, List
 from datetime import datetime
-import json
 from pathlib import Path
-import math
 
 
 CACHE_DIR = Path("data/cache")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-SOCIB_API_KEY = "fg1XJ43jxjkQ83o36VFcchho26I869v5"
 
 
 class SOCIBClient:
@@ -27,7 +23,9 @@ class SOCIBClient:
     }
 
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or SOCIB_API_KEY
+        from src.config import get_settings
+
+        self.api_key = api_key or get_settings().socib_api_key
 
     def _get_data(self, **params) -> Optional[Dict]:
         """Get data - key as query param, Accept: */*"""

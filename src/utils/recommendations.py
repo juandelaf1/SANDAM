@@ -3,7 +3,6 @@ from src.models import FlagColor, WaterQuality
 
 
 def generate_recommendations(beach: dict) -> List[Dict[str, Any]]:
-    recommendations = []
     level = "safe"
     messages = []
 

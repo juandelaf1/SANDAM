@@ -8,8 +8,7 @@ Contiene:
 """
 
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
-import math
+from typing import List, Dict
 from src.utils.distance import haversine_distance
 
 

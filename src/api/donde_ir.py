@@ -1,72 +1,87 @@
 """API Endpoint: Dónde Voy Ahora"""
 
-from fastapi import APIRouter, Query
-from typing import Optional
-from datetime import datetime
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.deps import get_db
 from src.models import Beach
-from sqlalchemy import select
 from src.utils.recommendation_engine import (
     donde_ir_ahora,
     calcular_sol_restante,
     generar_recomendacion_completa,
-    predecir_medusas
+    predecir_medusas,
 )
+from src.utils.scoring import calculate_overall_score
 
 
 router = APIRouter(prefix="/donde-ir", tags=["donde-ir"])
 
 
+def _beach_to_dict(beach: Beach) -> dict:
+    return {
+        "name": beach.name,
+        "latitude": beach.latitude,
+        "longitude": beach.longitude,
+        "region": beach.region,
+        "current_occupation": beach.current_occupation,
+        "flag_color": beach.flag_color,
+        "water_quality": beach.water_quality,
+        "jellyfish_present": beach.jellyfish_present,
+        "water_temp": beach.water_temp,
+        "uv_index": beach.uv_index,
+        "wave_height": beach.wave_height,
+        "wind_speed": beach.wind_speed,
+        "has_lifeguard": beach.has_lifeguard,
+        "has_parking": beach.has_parking,
+        "has_showers": beach.has_showers,
+        "has_accessibility": beach.has_accessibility,
+        "has_shade": beach.has_shade,
+        "has_kiosk": beach.has_kiosk,
+    }
+
+
 @router.get("/ahora")
 async def donde_ir_ahora_endpoint(
-    lat: float = Query(..., description="Latitud del usuario (GPS)"),
-    lon: float = Query(..., description="Longitud del usuario (GPS)"),
+    lat: float = Query(..., ge=-90, le=90, description="Latitud del usuario (GPS)"),
+    lon: float = Query(..., ge=-180, le=180, description="Longitud del usuario (GPS)"),
     incluir_marginales: bool = Query(False, description="Incluir playas marginales"),
-    db = None
+    db: AsyncSession = Depends(get_db),
 ):
     """
     🚀 ALGORITMO PRINCIPAL: Dónde voy ahora
-    
+
     Dado tu ubicación GPS y la hora actual, te dice:
     - Qué playas están a tiempo de llegar
     - Cuánto tiempo de viaje
     - Cuándo llegas
     - Si merece la pena (teniendo en cuenta el sol que queda)
-    
+
     Returns: Lista de recomendaciones ordenadas por meritocracia
     """
-    # Obtener todas las playas
-    # (En producción, usar db. Aquí usamos datos en memoria)
-    from src.utils.geopandas_processor import BEACH_DATA
-    
-    # Añadir score a cada playa
+    result = await db.execute(select(Beach))
     playas_con_score = []
-    for b in BEACH_DATA:
-        score = calcular_score_playa(b)
-        b["score"] = score
-        b["latitude"] = b.get("lat", b.get("latitude"))
-        b["longitude"] = b.get("lon", b.get("longitude"))
-        playas_con_score.append(b)
-    
-    # Ejecutar algoritmo
+    for beach in result.scalars().all():
+        playa = _beach_to_dict(beach)
+        playa["score"] = calculate_overall_score(playa)
+        playas_con_score.append(playa)
+
     recomendaciones = donde_ir_ahora(
         playas_con_score,
         lat,
         lon,
-        incluye_marginales=incluir_marginales
+        incluye_marginales=incluir_marginales,
     )
-    
-    # Añadir info sol
+
     sol = calcular_sol_restante()
-    
+
     return {
         "ubicacion_usuario": {"lat": lat, "lon": lon},
         "hora_actual": sol["hora_actual"],
         "atardecer": sol["hora_atardecer"],
         "sol_restante": f"{sol['horas_restantes']:.1f}h",
         "total_playas": len(playas_con_score),
-        "recomendaciones": recomendaciones
+        "recomendaciones": recomendaciones,
     }
 
 
@@ -78,82 +93,37 @@ async def sol_restante_endpoint():
         "hora_actual": sol["hora_actual"],
         "hora_atardecer": sol["hora_atardecer"],
         "horas_restantes": round(sol["horas_restantes"], 1),
-        "minutos_restantes": sol["minutos_restantes"]
+        "minutos_restantes": sol["minutos_restantes"],
     }
 
 
 @router.get("/evaluar-playa/{playa_nombre}")
 async def evaluar_playa_endpoint(
     playa_nombre: str,
-    lat: float = Query(..., description="Tu latitud"),
-    lon: float = Query(..., description="Tu longitud")
+    lat: float = Query(..., ge=-90, le=90, description="Tu latitud"),
+    lon: float = Query(..., ge=-180, le=180, description="Tu longitud"),
+    db: AsyncSession = Depends(get_db),
 ):
     """Evalúa si merece la pena ir a una playa específica"""
-    from src.utils.geopandas_processor import BEACH_DATA
-    
-    # Buscar playa
-    playa = None
-    for b in BEACH_DATA:
-        if playa_nombre.lower() in b.get("name", "").lower():
-            playa = b
-            break
-    
-    if not playa:
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{playa_nombre}%")).limit(1)
+    )
+    beach = result.scalar_one_or_none()
+
+    if not beach:
         return {"error": "Playa no encontrada"}
-    
-    score = calcular_score_playa(playa)
-    playa["score"] = score
-    
-    evaluacion = generar_recomendacion_completa(playa, lat, lon)
-    
-    return evaluacion
+
+    playa = _beach_to_dict(beach)
+    playa["score"] = calculate_overall_score(playa)
+
+    return generar_recomendacion_completa(playa, lat, lon)
 
 
 @router.get("/prediccion-medusas")
 async def predecir_medusas_endpoint(
     viento: str = Query(None, description="Dirección viento (N, NE, E, SE, S, SW, W, NW)"),
     temperatura: float = Query(None, ge=0, le=40, description="Temperatura agua °C"),
-    corrientes: str = Query(None, description="Dirección corrientes (norte/sur)")
+    corrientes: str = Query(None, description="Dirección corrientes (norte/sur)"),
 ):
     """Predice riesgo de medusas basado en condiciones"""
-    prediccion = predecir_medusas(viento, temperatura, corrientes)
-    return prediccion
-
-
-def calcular_score_playa(beach: dict) -> float:
-    """Calcula score 0-100 para una playa"""
-    score = 0
-    
-    # Ocupación (30%)
-    ocupacion = beach.get("current_occupation", 50)
-    score_ocupacion = max(0, (100 - ocupacion) * 0.30)
-    score += score_ocupacion
-    
-    # Bandera (30%)
-    flag = beach.get("flag_color", "unknown")
-    if flag == "green":
-        score += 30
-    elif flag == "yellow":
-        score += 15
-    
-    # Medusas (20%)
-    if not beach.get("jellyfish_present", False):
-        score += 20
-    
-    # Calidad agua (10%)
-    calidad = beach.get("water_quality", "unknown")
-    if calidad == "excellent":
-        score += 10
-    elif calidad == "good":
-        score += 7
-    
-    # Servicios (10%)
-    servicios = 0
-    if beach.get("has_lifeguard"): servicios += 2
-    if beach.get("has_parking"): servicios += 2
-    if beach.get("has_showers"): servicios += 2
-    if beach.get("has_accessibility"): servicios += 2
-    if beach.get("has_shade"): servicios += 2
-    score += servicios
-    
-    return round(score, 1)
+    return predecir_medusas(viento, temperatura, corrientes)

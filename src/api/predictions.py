@@ -23,7 +23,9 @@ async def predict_beach_occupation(
     db: AsyncSession = Depends(get_db)
 ):
     """Predict beach occupation for current time period"""
-    result = await db.execute(select(Beach).where(Beach.name.ilike(f"%{beach_name}%")))
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
     beach = result.scalar_one_or_none()
 
     if not beach:
@@ -58,7 +60,9 @@ async def predict_jellyfish_risk(
     db: AsyncSession = Depends(get_db)
 ):
     """Predict jellyfish presence risk"""
-    result = await db.execute(select(Beach).where(Beach.name.ilike(f"%{beach_name}%")))
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
     beach = result.scalar_one_or_none()
 
     if not beach:
@@ -95,7 +99,9 @@ async def get_shade_availability(
     db: AsyncSession = Depends(get_db)
 ):
     """Get natural shade availability for a beach"""
-    result = await db.execute(select(Beach).where(Beach.name.ilike(f"%{beach_name}%")))
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
     beach = result.scalar_one_or_none()
 
     if not beach:
@@ -130,7 +136,9 @@ async def get_beach_forecast(
     db: AsyncSession = Depends(get_db)
 ):
     """Get forecast for next N days"""
-    result = await db.execute(select(Beach).where(Beach.name.ilike(f"%{beach_name}%")))
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
     beach = result.scalar_one_or_none()
 
     if not beach:
@@ -159,7 +167,9 @@ async def get_ideal_score(
     db: AsyncSession = Depends(get_db)
 ):
     """Calculate 'Playa Ideal' score for a beach"""
-    result = await db.execute(select(Beach).where(Beach.name.ilike(f"%{beach_name}%")))
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
     beach = result.scalar_one_or_none()
 
     if not beach:
@@ -179,8 +189,6 @@ async def get_ideal_score(
         "has_shade": bool(beach.has_shade) if beach.has_shade is not None else False,
         "has_kiosk": bool(beach.has_kiosk) if beach.has_kiosk is not None else False
     }
-
-    from src.utils.predictions import predict_occupation_advanced, predict_jellyfish_presence
 
     score_result = calculate_ideal_score(beach_dict)
     occ_pred = predict_occupation_advanced(beach_dict)

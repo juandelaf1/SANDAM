@@ -184,7 +184,6 @@ def calculate_shade_availability(beach: Dict, current_hour: int) -> Dict:
     - Presencia de acantilados/vegetación
     """
     latitude = beach.get("latitude", 39.5)
-    longitude = beach.get("longitude", 2.5)
     
     has_acantilado = random.random() > 0.5
     has_vegetacion = random.random() > 0.6

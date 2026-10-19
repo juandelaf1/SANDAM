@@ -46,7 +46,7 @@ class PlatgesBalearsClient:
         
         try:
             response = requests.get(
-                f"{self.BASE_URL/caiba}",
+                f"{self.BASE_URL}/caiba",
                 timeout=20,
                 headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

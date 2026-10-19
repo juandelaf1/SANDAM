@@ -1,12 +1,15 @@
 """Unified external data endpoint for SANDAM"""
 
 from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.deps import get_db
 from src.models import Beach
+from src.utils.distance import haversine_distance
 
 router = APIRouter(prefix="/external", tags=["external_data"])
 
@@ -33,7 +36,7 @@ def _find_nearest_station(lat: float, lon: float) -> dict:
 
 @router.get("/comprehensive/{beach_id}")
 async def get_comprehensive_beach_data(
-    beach_id: str,
+    beach_id: UUID,
     db: AsyncSession = Depends(get_db)
 ):
     """Get comprehensive external data for a beach"""
@@ -74,7 +77,7 @@ async def get_comprehensive_beach_data(
 
 @router.get("/compare/{beach_id}")
 async def compare_with_nearby(
-    beach_id: str,
+    beach_id: UUID,
     radius_km: float = Query(15, ge=1, le=50),
     db: AsyncSession = Depends(get_db)
 ):
@@ -88,18 +91,12 @@ async def compare_with_nearby(
 
         result_all = await db.execute(select(Beach))
         all_beaches = result_all.scalars().all()
-        current_beach_id = str(beach_id)
 
-        import math
         nearby_beaches = []
         for b in all_beaches:
-            beach_uuid = str(b.id)
-            if len(beach_uuid) > 10 and len(current_beach_id) > 10 and beach_uuid[:8] == current_beach_id[:8]:
+            if b.id == beach.id:
                 continue
-            dist = math.sqrt(
-                (beach.latitude - b.latitude)**2 + 
-                (beach.longitude - b.longitude)**2
-            ) * 111
+            dist = haversine_distance(beach.latitude, beach.longitude, b.latitude, b.longitude)
             if dist <= radius_km:
                 nearby_beaches.append({
                     "beach": {"id": str(b.id), "name": b.name, "distance_km": round(dist, 2)},

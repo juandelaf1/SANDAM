@@ -2,7 +2,6 @@
 
 import requests
 from typing import Optional, Dict, Any, List
-from datetime import datetime
 import time
 
 
@@ -43,7 +42,7 @@ class AEMETClient:
 
                 content_type = response.headers.get("content-type", "")
                 if "html" in content_type:
-                    print(f"Received HTML instead of JSON, retrying...")
+                    print("Received HTML instead of JSON, retrying...")
                     time.sleep(2)
                     continue
 

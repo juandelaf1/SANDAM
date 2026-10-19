@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 from src.models import Tide, FlagColor, WaterQuality, DataStatus
 
 
@@ -40,7 +40,7 @@ class BeachBase(BaseModel):
 
 
 class BeachCreate(BeachBase):
-    pass
+    data_status: DataStatus = DataStatus.live
 
 
 class BeachUpdate(BaseModel):
@@ -76,6 +76,8 @@ class BeachUpdate(BaseModel):
     has_accessibility: Optional[bool] = None
     has_lifeguard: Optional[bool] = None
 
+    data_status: Optional[DataStatus] = None
+
 
 class BeachResponse(BeachBase):
     id: UUID
@@ -83,8 +85,7 @@ class BeachResponse(BeachBase):
     created_at: datetime
     last_updated: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BeachListResponse(BaseModel):
@@ -104,8 +105,7 @@ class NearbyBeachResponse(BaseModel):
     has_lifeguard: bool
     distance_km: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NearbyResponse(BaseModel):

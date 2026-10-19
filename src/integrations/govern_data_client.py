@@ -1,7 +1,7 @@
 """Govern Illes Balears Open Data Client for SANDAM"""
 
 import requests
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 from datetime import datetime
 import json
 from pathlib import Path

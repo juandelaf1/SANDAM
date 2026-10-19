@@ -1,9 +1,13 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Index, Uuid
 from src.database import Base
+
+
+def utcnow() -> datetime:
+    """Naive UTC timestamp (compatible with the existing DateTime columns)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Tide(str, Enum):
@@ -36,8 +40,8 @@ class DataStatus(str, Enum):
 class Beach(Base):
     __tablename__ = "beaches"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(255), nullable=False)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False, unique=True, index=True)
     region = Column(String(100), nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
@@ -73,8 +77,8 @@ class Beach(Base):
 
     data_status = Column(String(20), default=DataStatus.unavailable.value)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    last_updated = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         Index("idx_beach_location", "latitude", "longitude"),

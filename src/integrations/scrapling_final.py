@@ -4,7 +4,6 @@ from scrapling import Fetcher, StealthyFetcher
 from datetime import datetime
 import json
 from pathlib import Path
-import re
 
 CACHE_DIR = Path("data/cache")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)

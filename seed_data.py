@@ -1,10 +1,11 @@
 """Seed data for SANDAM - Initial beaches in Mallorca (Illes Balears)"""
 
 import asyncio
-from datetime import datetime
+
+from sqlalchemy import select
 
 from src.database import async_session_maker, init_db
-from src.models import Beach, Tide, FlagColor, WaterQuality, DataStatus
+from src.models import Beach, Tide, FlagColor, WaterQuality, DataStatus, utcnow
 
 
 MALLORCA_BEACHES = [
@@ -517,16 +518,23 @@ async def seed_database():
     await init_db()
 
     async with async_session_maker() as session:
+        existing = await session.execute(select(Beach.name))
+        existing_names = set(existing.scalars().all())
+
+        inserted = 0
         for beach_data in MALLORCA_BEACHES:
+            if beach_data["name"] in existing_names:
+                continue
             beach = Beach(**beach_data)
             beach.data_status = DataStatus.live
-            beach.created_at = datetime.utcnow()
-            beach.last_updated = datetime.utcnow()
+            beach.created_at = utcnow()
+            beach.last_updated = utcnow()
             session.add(beach)
+            inserted += 1
 
         await session.commit()
 
-    print(f"✅ Seeded {len(MALLORCA_BEACHES)} beaches to database")
+    print(f"✅ Seeded {inserted} beaches ({len(MALLORCA_BEACHES) - inserted} already present)")
 
 
 if __name__ == "__main__":

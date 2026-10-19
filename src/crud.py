@@ -1,18 +1,22 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import Beach, FlagColor, WaterQuality, DataStatus
+from src.models import Beach, FlagColor, WaterQuality
 from src.schemas import BeachCreate, BeachUpdate
-from src.utils.distance import haversine_distance, sort_by_distance
+from src.utils.distance import haversine_distance
 from src.utils.scoring import calculate_overall_score
+
+
+def _enum_value(value) -> str:
+    """Return the raw string for enum members or plain strings."""
+    return value.value if hasattr(value, "value") else str(value)
 
 
 async def create_beach(db: AsyncSession, beach_data: BeachCreate) -> Beach:
     beach = Beach(**beach_data.model_dump())
-    beach.data_status = DataStatus.live
     db.add(beach)
     await db.commit()
     await db.refresh(beach)
@@ -24,10 +28,7 @@ async def get_beach(db: AsyncSession, beach_id: UUID) -> Optional[Beach]:
     return result.scalar_one_or_none()
 
 
-async def get_beaches(
-    db: AsyncSession,
-    skip: int = 0,
-    limit: int = 100,
+def _beach_filters(
     region: Optional[str] = None,
     flag_color: Optional[FlagColor] = None,
     water_quality: Optional[WaterQuality] = None,
@@ -35,9 +36,7 @@ async def get_beaches(
     has_shade: Optional[bool] = None,
     occupation_min: Optional[int] = None,
     occupation_max: Optional[int] = None,
-) -> List[Beach]:
-    query = select(Beach)
-
+) -> list:
     filters = []
     if region:
         filters.append(Beach.region == region)
@@ -53,7 +52,26 @@ async def get_beaches(
         filters.append(Beach.current_occupation >= occupation_min)
     if occupation_max is not None:
         filters.append(Beach.current_occupation <= occupation_max)
+    return filters
 
+
+async def get_beaches(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 100,
+    region: Optional[str] = None,
+    flag_color: Optional[FlagColor] = None,
+    water_quality: Optional[WaterQuality] = None,
+    has_lifeguard: Optional[bool] = None,
+    has_shade: Optional[bool] = None,
+    occupation_min: Optional[int] = None,
+    occupation_max: Optional[int] = None,
+) -> List[Beach]:
+    query = select(Beach)
+    filters = _beach_filters(
+        region, flag_color, water_quality,
+        has_lifeguard, has_shade, occupation_min, occupation_max,
+    )
     if filters:
         query = query.where(and_(*filters))
 
@@ -67,22 +85,21 @@ async def get_beaches_count(
     region: Optional[str] = None,
     flag_color: Optional[FlagColor] = None,
     water_quality: Optional[WaterQuality] = None,
+    has_lifeguard: Optional[bool] = None,
+    has_shade: Optional[bool] = None,
+    occupation_min: Optional[int] = None,
+    occupation_max: Optional[int] = None,
 ) -> int:
-    query = select(Beach)
-
-    filters = []
-    if region:
-        filters.append(Beach.region == region)
-    if flag_color:
-        filters.append(Beach.flag_color == flag_color)
-    if water_quality:
-        filters.append(Beach.water_quality == water_quality)
-
+    query = select(func.count(Beach.id))
+    filters = _beach_filters(
+        region, flag_color, water_quality,
+        has_lifeguard, has_shade, occupation_min, occupation_max,
+    )
     if filters:
         query = query.where(and_(*filters))
 
     result = await db.execute(query)
-    return len(result.scalars().all())
+    return int(result.scalar() or 0)
 
 
 async def update_beach(db: AsyncSession, beach: Beach, beach_data: BeachUpdate) -> Beach:
@@ -90,7 +107,7 @@ async def update_beach(db: AsyncSession, beach: Beach, beach_data: BeachUpdate) 
     for field, value in update_data.items():
         setattr(beach, field, value)
 
-    beach.last_updated = datetime.utcnow()
+    beach.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
     await db.refresh(beach)
     return beach
@@ -124,7 +141,15 @@ async def get_beaches_nearby(
                 "flag_color": beach.flag_color,
                 "water_quality": beach.water_quality,
                 "has_lifeguard": beach.has_lifeguard,
-                "distance_km": round(distance, 2)
+                "jellyfish_present": beach.jellyfish_present,
+                "uv_index": beach.uv_index,
+                "wave_height": beach.wave_height,
+                "has_shade": beach.has_shade,
+                "has_showers": beach.has_showers,
+                "has_parking": beach.has_parking,
+                "has_kiosk": beach.has_kiosk,
+                "has_accessibility": beach.has_accessibility,
+                "distance_km": round(distance, 2),
             }
             nearby.append(beach_dict)
 
@@ -185,26 +210,14 @@ async def search_beach_with_alternatives(
             }
         }
 
-    beach_dict = {
-        "id": beach.id,
-        "name": beach.name,
-        "region": beach.region,
-        "latitude": beach.latitude,
-        "longitude": beach.longitude,
-        "current_occupation": beach.current_occupation,
-        "flag_color": beach.flag_color,
-        "water_quality": beach.water_quality,
-        "jellyfish_present": beach.jellyfish_present
-    }
-
     problems = []
     if beach.current_occupation and max_occupation and beach.current_occupation > max_occupation:
         problems.append(f"Ocupación alta ({beach.current_occupation}%)")
     if beach.flag_color in [FlagColor.red, FlagColor.yellow]:
-        problems.append(f"Bandera {beach.flag_color.value}")
+        problems.append(f"Bandera {_enum_value(beach.flag_color)}")
     if beach.water_quality in [WaterQuality.poor, WaterQuality.sufficient] and min_quality:
-        if beach.water_quality.value != min_quality.value:
-            problems.append(f"Calidad {beach.water_quality.value}")
+        if _enum_value(beach.water_quality) != _enum_value(min_quality):
+            problems.append(f"Calidad {_enum_value(beach.water_quality)}")
     if avoid_jellyfish and beach.jellyfish_present:
         problems.append("Medusas presentes")
 

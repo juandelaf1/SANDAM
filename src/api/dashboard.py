@@ -1,12 +1,11 @@
-from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from src import schemas
 from src.deps import get_db
-from src.models import Beach, FlagColor, WaterQuality
+from src.models import Beach, utcnow
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -58,7 +57,7 @@ async def get_dashboard_summary(db: AsyncSession = Depends(get_db)):
         "quality_distribution": quality_counts,
         "flag_distribution": flag_counts,
         "active_alerts": active_alerts,
-        "last_updated": datetime.utcnow()
+        "last_updated": utcnow()
     }
 
 
@@ -70,7 +69,7 @@ async def get_alerts(db: AsyncSession = Depends(get_db)):
     red_beaches = result.scalars().all()
 
     result = await db.execute(
-        select(Beach).where(Beach.jellyfish_present == True)
+        select(Beach).where(Beach.jellyfish_present.is_(True))
     )
     jellyfish_beaches = result.scalars().all()
 

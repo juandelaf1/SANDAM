@@ -3,7 +3,10 @@
 import asyncio
 import math
 from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.deps import get_db
@@ -36,8 +39,12 @@ def find_nearest_station(lat: float, lon: float) -> dict:
 
 async def get_weather_from_aemet(station_id: str) -> dict:
     """Get weather data from AEMET (cached or fresh)"""
-    from src.integrations.weather_integration import get_cached_weather, fetch_weather_for_beach, get_api_key
     from src.integrations.aemet_client import AEMETClient
+    from src.integrations.weather_integration import (
+        get_api_key,
+        get_cached_weather,
+        save_cached_weather,
+    )
 
     cached = get_cached_weather(station_id, max_age_minutes=30)
     if cached:
@@ -48,22 +55,18 @@ async def get_weather_from_aemet(station_id: str) -> dict:
         return {"error": "No API key"}
 
     client = AEMETClient(api_key)
-
     station_info = MALLORCA_STATIONS.get(station_id, {})
-    beach_data = {"latitude": station_info.get("lat", 39.5), "longitude": station_info.get("lon", 2.5)}
 
     try:
-        import time
-        time.sleep(1)
-        obs = client.get_station_observation(station_id)
+        # AEMET is a blocking client; keep it off the event loop.
+        obs = await asyncio.to_thread(client.get_station_observation, station_id)
         if obs and isinstance(obs, list) and len(obs) > 0:
             data = {
                 "station": station_info.get("name", station_id),
                 "station_id": station_id,
                 "timestamp": datetime.now().isoformat(),
-                "observation": obs[0]
+                "observation": obs[0],
             }
-            from src.integrations.weather_integration import save_cached_weather
             save_cached_weather(station_id, data)
             return data
     except Exception as e:
@@ -74,12 +77,10 @@ async def get_weather_from_aemet(station_id: str) -> dict:
 
 @router.get("/beach/{beach_id}")
 async def get_weather_for_beach(
-    beach_id: str,
+    beach_id: UUID,
     db: AsyncSession = Depends(get_db)
 ):
     """Get weather data for a specific beach"""
-    from sqlalchemy import select
-
     result = await db.execute(select(Beach).where(Beach.id == beach_id))
     beach = result.scalar_one_or_none()
 

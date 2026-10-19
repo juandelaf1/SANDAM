@@ -8,12 +8,11 @@ Scrapes:
 
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime
 import json
 from pathlib import Path
 import time
-import random
 
 # Intentar importar selenium/playwright
 SELENIUM_AVAILABLE = False
@@ -23,7 +22,6 @@ try:
     from selenium import webdriver
     from selenium.webdriver.common.by import By
     from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     SELENIUM_AVAILABLE = True
@@ -182,7 +180,7 @@ class UIBBeachCamScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(resultados, f)
-            except:
+            except Exception:
                 pass
         
         return resultados
@@ -216,7 +214,7 @@ class UIBBeachCamScraper:
                     "source": "UIB_BeachCam",
                     "timestamp": datetime.now().isoformat()
                 })
-            except:
+            except Exception:
                 continue
         
         return beaches
@@ -303,7 +301,7 @@ class MedusAppScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(resultados, f)
-            except:
+            except Exception:
                 pass
         
         return resultados
@@ -330,7 +328,7 @@ class MedusAppScraper:
                             "species": species.text if species else "Unknown",
                             "date": date.text if date else datetime.now().isoformat()
                         })
-                    except:
+                    except Exception:
                         continue
                 
                 return sightings
@@ -374,7 +372,7 @@ class PlatgesBalearsScraper:
             try:
                 with open(self.cache_file, 'w') as f:
                     json.dump(resultados, f)
-            except:
+            except Exception:
                 pass
         
         return resultados
@@ -450,7 +448,7 @@ class PlatgesBalearsScraper:
                     "source": "Platges_Balears",
                     "timestamp": datetime.now().isoformat()
                 })
-            except:
+            except Exception:
                 continue
         
         return beaches
@@ -513,7 +511,7 @@ if __name__ == "__main__":
     print("\nScraping all sources...")
     data = scrape_all_sources()
     
-    print(f"\nTotal results:")
+    print("\nTotal results:")
     print(f"  Occupation: {len(data['occupation'])}")
     print(f"  Jellyfish: {len(data['jellyfish'])}")
     print(f"  Flags: {len(data['flags'])}")
