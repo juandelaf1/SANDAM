@@ -228,7 +228,11 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Tests for User Story 1
 
-- [ ] T010 [P] [US1] Contract test del endpoint en `tests/test_api_donde_ir.py` (forma de la respuesta conforme a `contracts/donde-ir.openapi.yaml`, compatibilidad de campos existentes).
+- [x] T010 [P] [US1] Contract test del endpoint en `tests/test_api_donde_ir.py` (forma de la respuesta conforme a `contracts/donde-ir.openapi.yaml`, compatibilidad de campos existentes).
+  - **Evidencia (2026-10-19)**: `tests/test_api_donde_ir.py` (2 casos): respuesta valida contra
+    `DondeIrResponse`/`Recommendation`; campos preservados presentes y no nulos; aditivos
+    (`eligible`, `travel_time_is_estimate`) presentes; playa excluida omitida de recomendaciones.
+    Verificado: 2/2 OK.
 - [ ] T011 [P] [US1] Integration test de elegibilidad, no-compensación por comodidad y no-promoción de la baja afluencia en `tests/test_recommendation.py`.
 
 ### Implementation for User Story 1
