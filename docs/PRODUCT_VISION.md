@@ -75,6 +75,7 @@ explicar cada decisión; ausencia de datos inventados; reproducibilidad del rank
 ## 7. Documentación relacionada
 
 - Constitución (principios vinculantes): [`../.specify/memory/constitution.md`](../.specify/memory/constitution.md)
+- Blueprint de producto (capacidades, arquitectura conceptual, roadmap): [`PRODUCT_BLUEPRINT.md`](PRODUCT_BLUEPRINT.md)
 - Especificación 001 (recomendación sostenible): [`../specs/001-sustainable-beach-recommendation/spec.md`](../specs/001-sustainable-beach-recommendation/spec.md)
 - Decisiones arquitectónicas: [`adr/`](adr/)
 - Decisiones pendientes: [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md)

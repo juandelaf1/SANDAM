@@ -175,6 +175,7 @@ Documentación autoritativa (fuente de verdad):
 | Documento | Contenido |
 |-----------|-----------|
 | [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) | Visión, propósito y ámbito del producto |
+| [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) | Blueprint de producto (capacidades, arquitectura conceptual, roadmap) |
 | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | Principios y gobernanza |
 | [`AGENTS.md`](AGENTS.md) | Reglas operativas para agentes |
 | [`specs/`](specs/) | Especificaciones funcionales (Spec-Driven Development) |
