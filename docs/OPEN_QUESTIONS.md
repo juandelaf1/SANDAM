@@ -135,18 +135,42 @@ técnica arbitraria.
 #### Q26 — Distinguir "servicio no disponible" de "servicio no documentado"
 - **Qué necesitamos saber**: cómo representar en el modelo que un servicio (socorrista, sombra,
   aparcamiento, ducha, kiosco, accesibilidad) **no consta**, frente a "consta que no lo hay".
-- **Por qué afecta**: hoy estos campos son booleanos con valor por defecto `False`, por lo que el
-  scoring canónico (T006) no puede distinguir "no disponible" de "no documentado" y trata ambos como
-  "no disponible" (FR-003 advierte que lo desconocido no debe tratarse como un valor). Afecta a la
-  justicia de la comparación entre playas con distinto grado de documentación.
-- **Evidencia que la resuelve**: decidir si estos campos pasan a `NULL` (desconocido) con `False`
-  explícito cuando conste la ausencia, o si se añade un flag de procedencia por servicio; y confirmar
-  la fuente que documenta la ausencia.
-- **Bloquea**: afinar el factor `services` del score canónico. **No** bloquea el MVP (peso 0.15 y
-  limitación documentada en `research.md` §D2-bis).
+- **Por qué afecta**: los seis campos son `Boolean` con `default=False` tanto en el ORM
+  (`src/models.py`) como en `BeachBase` (`src/schemas.py`), y la columna admite `NULL`. Un `False`
+  puede significar **ausencia confirmada** o **dato no documentado**, y el modelo no los distingue.
+  Puntuarlos trataría un valor por defecto como una observación verificada (FR-003) y haría que la
+  comparación favoreciera o penalizara a una playa según su grado de documentación.
+- **Evidencia que la resuelve**: decidir si los campos pasan a `NULL` cuando no consta (con `False`
+  solo cuando la ausencia esté documentada) o si se añade un indicador de procedencia por servicio; y
+  confirmar con qué fuente se documenta la ausencia.
+- **Bloquea**: volver a puntuar los servicios en el score canónico. **No** bloquea el MVP: desde la
+  auditoría de T006 el factor `services` **no** se puntúa ni cuenta para `coverage`
+  (`research.md` §D2-ter). Los seis valores siguen exponiéndose tal cual en la respuesta, sin
+  presentarlos como verificados.
 - **Cuándo**: al definir la trazabilidad de cada campo (FR-015), en Fase B.
-- **Decisión temporal segura**: documentar la limitación y no presentar el factor como una medición
-  precisa; revisar el peso cuando el modelo exprese el desconocido.
+- **Decisión temporal segura**: no puntuar los servicios; registrar la limitación y no presentar el
+  valor por defecto como una ausencia confirmada. Criterio de reintegración: solo si el modelo
+  expresa de forma explícita la ausencia documentada (o existe procedencia por servicio).
+
+#### Q27 — Valores por defecto del modelo indistinguibles de observaciones
+- **Qué necesitamos saber**: qué campos deben ser `NULL`/desconocidos cuando nadie ha observado un
+  valor, y cómo se registra su procedencia. Hoy conviven dos comportamientos: `flag_color` y
+  `water_quality` usan `unknown` por defecto (sí expresan desconocido), mientras que
+  `current_occupation` (`default=0`), `has_*` (`default=False`), `sargasso_level` (`default=0`) y
+  `jellyfish_present` (`default=False`) producen un valor concreto que nadie ha observado.
+- **Por qué afecta**: FR-003 (la ausencia de datos no equivale a una condición favorable),
+  FR-004 (clasificar cada valor) y FR-015 (procedencia). Un `0` de ocupación por defecto se presenta
+  igual que una observación real de 0 %, de modo que el indicador de presión relativa —y el campo
+  `ocupacion` de la respuesta— podrían reflejar un valor no observado; del mismo modo, un `False` por
+  defecto se lee como un hecho.
+- **Evidencia que la resuelve**: ficha de procedencia por campo (quién lo observa, con qué método,
+  con qué caducidad) y decisión explícita de modelo (`NULL` por defecto frente a valor por defecto
+  documentado), con la migración correspondiente.
+- **Bloquea**: ponderar la ocupación y etiquetar cada valor con su naturaleza real. **No** bloquea el
+  MVP: desde la auditoría de T006 el score canónico no pondera la ocupación (`research.md` §D2-ter).
+- **Cuándo**: junto con la trazabilidad (FR-015) y el etiquetado de valores (FR-004), en Fase B.
+- **Decisión temporal segura**: no ponderar la ocupación; no presentar los indicadores derivados como
+  mediciones verificadas y etiquetar como estimación lo que proceda.
 
 ### Fuentes y permisos
 

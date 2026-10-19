@@ -137,19 +137,43 @@ independientes.
     copia en el notebook no versionado `notebooks/dashboard_sandam_2026.py` (fuera del repositorio
     versionado). Hasta T008 no puede afirmarse que *todo* el repositorio tenga una sola fórmula; sí
     que el **sistema canónico** (`src/utils/scoring.py` y sus consumidores) tiene una sola.
+  - **Auditoría semántica (2026-10-19) → commit correctivo**: la revisión dirigida del scoring
+    encontró tres desviaciones, corregidas en un commit **separado** (sin reescribir el historial ni
+    tocar el commit de T006). Decisiones, mediciones y alternativas descartadas en `research.md`
+    §D2-ter:
+    (1) **FR-007**: la ocupación dejó de ser un factor ponderado (se elimina su peso 0.20): premiar la
+    baja afluencia era automático e injustificado mientras no puedan comprobarse vulnerabilidad,
+    restricción ni capacidad (T012). Sigue expuesta como **indicador etiquetado** (FR-014).
+    (2) **FR-003**: el factor `services` se retira del score **y** de `coverage`: `has_*` es `Boolean`
+    con `default=False` (ORM y `BeachBase`) y la columna admite `NULL`, así que el modelo no distingue
+    "ausencia confirmada" de "no documentado". Bloqueo y criterio de reintegración en
+    `docs/OPEN_QUESTIONS.md` (Q26); el caso general de valores por defecto indistinguibles de
+    observaciones, en Q27.
+    (3) **Cobertura**: `coverage` medía la *presencia de valores en el modelo* (los seis servicios
+    siempre presentes ⇒ factor contado como conocido), no la información fiable; y la renormalización
+    hacía que retirar un factor desfavorable **subiera** la puntuación (medido: 77.8 con UV y oleaje
+    ausentes frente a 75.8 con todos los datos). Ahora un score numérico exige que **todos** los
+    factores puntuados estén documentados (`coverage == 1.0`); en otro caso el resultado es `None` =
+    información insuficiente (FR-012). Se eliminan `MIN_DATA_COVERAGE` y la renormalización.
+    Factores puntuados resultantes: `water_quality` 0.30, `sea_state` 0.20, `solar_exposure` 0.15
+    (pesos relativos; media ponderada normalizada). Verificado: `ruff` OK; **106 tests OK**.
 - [x] T007 [P] Implementar tests unitarios del scoring canónico en `tests/test_scoring.py` (determinismo, límites, datos ausentes).
   - **Definición de terminado (T007)**: hay tests unitarios del scoring canónico que cubren
     determinismo, límites (bandas y rango 0..100) y datos ausentes; no se suprimen pruebas
     existentes para que pasen; lint y tests en verde.
-  - **Evidencia (2026-10-19)**: `tests/test_scoring.py` nuevo (38 casos: 13 funciones + 20
-    parametrizados de bandas + 5 de servicios/presión), incluyendo determinismo (50 repeticiones con
-    el mismo resultado), rango acotado sobre una rejilla de entradas, `None` para calidad/oleaje/UV
-    desconocidos y para cobertura insuficiente, exclusión no compensable de bandera roja incluso en
-    una playa "perfecta" y con ocupación 0, bandas de oleaje/UV en sus límites exactos, y presión
-    relativa desconocida ≠ 0. En `tests/test_utils.py` se adaptaron las 4 pruebas de scoring al
-    comportamiento canónico (bandera roja y medusas como exclusiones; calidad `unknown` → `None`;
-    score acotado en lugar del valor exacto 100). Fixtures sintéticas, etiquetadas como tales.
-    Verificado: `ruff` OK; **102 tests OK** (antes 64).
+  - **Evidencia (2026-10-19, tras la auditoría)**: `tests/test_scoring.py` (42 casos: 20 funciones +
+    20 parametrizados de bandas + 2 de presión) cubre determinismo (50 repeticiones con el mismo
+    resultado), rango acotado sobre una rejilla de entradas, `None` para calidad/oleaje/UV
+    desconocidos y para información insuficiente, exclusión no compensable de bandera roja incluso en
+    una playa "perfecta" y con ocupación 0, bandas de oleaje/UV en sus límites exactos, presión
+    relativa desconocida ≠ 0, y —añadidas por la auditoría— **regresión de FR-007** (dos playas
+    idénticas salvo la ocupación obtienen el mismo score; el indicador sigue disponible y etiquetado),
+    **servicios sin efecto en el score ni en la cobertura** (True/False/ausentes → mismo score) y la
+    comprobación de que el conjunto de factores puntuados es exactamente el documentado (sin ocupación
+    ni servicios). En `tests/test_utils.py` se adaptaron las 4 pruebas de scoring al comportamiento
+    canónico (bandera roja y medusas como exclusiones; calidad `unknown` → `None`; score acotado en
+    lugar del valor exacto 100). Fixtures sintéticas, etiquetadas como tales.
+    Verificado: `ruff` OK; **106 tests OK** (antes 64).
 - [ ] T008 Retirar la variante divergente `calculate_ideal_score` de `src/api/predictions.py` y eliminar `random` en `src/utils/predictions.py` (o marcar esas rutas como no-fiables y excluirlas de dato real).
 - [ ] T009 [P] Implementar tests que garanticen ausencia de aleatoriedad en rutas de dato en `tests/test_no_random.py`.
 

@@ -1,18 +1,18 @@
-"""Scoring canónico único de SANDAM (tarea T006).
+"""Scoring canónico único de SANDAM (tarea T006 y su auditoría semántica).
 
 Autoridad: `specs/001-sustainable-beach-recommendation/spec.md` (FR-002, FR-003,
 FR-007, FR-008, FR-012, FR-014, FR-016), la constitución (Principios I, II, III,
 IV, VI) y `specs/001-sustainable-beach-recommendation/research.md` (D1: modelo de
-decisión en dos etapas; D2: scoring canónico único; D3: la baja ocupación no es un
-mérito).
+decisión en dos etapas; D2/D2-bis/D2-ter: scoring canónico; D3: la baja ocupación
+no es un mérito).
 
 Propiedades que garantiza este módulo
 -------------------------------------
 
 1. **Una sola implementación** (FR-016, Principio IV). Toda puntuación de playa
-   **del sistema canónico** se calcula aquí. Nota de alcance: la variante divergente
-   `calculate_ideal_score` de `src/api/predictions.py` (y una copia en un notebook
-   no versionado) todavía existe y se retira en T008.
+   **del sistema canónico** se calcula aquí. Nota de alcance: la variante
+   divergente `calculate_ideal_score` de `src/api/predictions.py` se retira en
+   T008.
 
 2. **Condiciones no compensables** (FR-002, Principios I y III). Las condiciones de
    seguridad **no se ponderan**: se evalúan *antes* del score y lo anulan. Ninguna
@@ -22,16 +22,26 @@ Propiedades que garantiza este módulo
    propia playa, en un único lugar, para no duplicar la regla.)
 
 3. **Lo desconocido no es favorable ni desfavorable** (FR-003, Principio II). Un
-   factor sin dato no aporta puntos ni se sustituye por un valor inventado: se
-   omite y el peso se **renormaliza** entre los factores conocidos. La fracción de
-   peso con dato se expone como ``coverage``; si no alcanza ``MIN_DATA_COVERAGE``,
-   el score es ``None`` ("desconocido") y no un número fabricado (FR-012).
+   factor sin dato no aporta puntos, no se sustituye por un valor inventado y no
+   se compensa renormalizando: un score numérico **solo existe si todos los
+   factores puntuados están documentados**. Si falta alguno, el resultado es
+   ``None`` = *información insuficiente* (FR-012). Así lo desconocido nunca se
+   convierte en una ventaja por el mero hecho de faltar.
 
-4. **La baja ocupación no es un mérito** (D3, FR-007). La ocupación se expone como
-   **indicador de presión relativa** etiquetado (``relative_pressure``); nunca como
-   capacidad oficial ni como umbral ecológico (FR-014).
+4. **La baja ocupación no es un mérito** (FR-007, D3). La ocupación **no se
+   puntúa**: se expone como **indicador de presión relativa** etiquetado
+   (``relative_pressure``, FR-014), nunca como capacidad oficial ni como umbral
+   ecológico. Ponderarla premiaría automáticamente las playas menos ocupadas
+   mientras el sistema todavía no puede comprobar vulnerabilidad, restricción ni
+   capacidad (T012).
 
-5. **Determinismo** (FR-008, SC-004). Con la misma entrada, el mismo resultado: no
+5. **Los servicios no se puntúan** (FR-003). El modelo guarda los servicios como
+   booleanos con valor por defecto ``False``, así que no puede distinguir
+   "ausencia confirmada" de "no documentado"; puntuarlos trataría un valor por
+   defecto como una observación verificada. Bloqueo registrado en
+   ``docs/OPEN_QUESTIONS.md`` (Q26).
+
+6. **Determinismo** (FR-008, SC-004). Con la misma entrada, el mismo resultado: no
    se usa `random` ni la hora del sistema.
 
 Los pesos y umbrales son **decisiones de producto explícitas** (Principio IV). No
@@ -44,36 +54,30 @@ from typing import Dict, Optional, Tuple
 from src.models import FlagColor, WaterQuality
 
 # --- Pesos del score canónico de comparación (etapa 2) ------------------------
-# Suman 1.0. Decisión de producto explícita (Principio IV); no son umbrales
-# ecológicos ni fijan capacidades. Justificación de cada peso:
+# Pesos **relativos** entre los factores que sí se puntúan. El score es su media
+# ponderada normalizada, de modo que no es necesario que sumen 1.0.
 #
-#   water_quality      0.30  Única variable ambiental con fuente oficial
-#                            verificable (calidad de aguas de baño) y la más
-#                            relevante para decidir el baño.
-#   sea_state          0.20  El oleaje condiciona la seguridad y la viabilidad de
-#                            la actividad en el momento de uso.
-#   relative_pressure  0.20  Entre playas elegibles, la comparación debe preferir
-#                            la de menor presión relativa (spec US1 esc. 3). El
-#                            indicador se etiqueta como relativo, nunca como
-#                            capacidad oficial (FR-014).
-#   solar_exposure     0.15  El calor y la exposición solar son una dimensión
-#                            central de la decisión (blueprint §8); se usa el UV
-#                            disponible como proxy. No es una valoración médica.
-#   services           0.15  Accesibilidad y servicios verificados determinan el
-#                            esfuerzo y la comodidad de la visita.
+# Factores puntuados y justificación (decisión de producto explícita, Principio IV;
+# no son umbrales ecológicos ni fijan capacidades):
+#   water_quality    0.30  Única variable ambiental con fuente oficial verificable
+#                          (calidad de aguas de baño) y la más relevante para
+#                          decidir el baño.
+#   sea_state        0.20  El estado de la mar condiciona la viabilidad y la
+#                          seguridad de la actividad en el momento de uso.
+#   solar_exposure   0.15  El calor y la exposición solar condicionan la estancia;
+#                          se usa el UV disponible como proxy. No es una
+#                          valoración médica.
+#
+# **No** son factores (auditoría semántica de T006, ver research.md §D2-ter):
+#   * la ocupación (FR-007: premiaría la baja afluencia sin poder comprobar aún
+#     vulnerabilidad, restricción ni capacidad); se expone solo como indicador;
+#   * los servicios (FR-003: el modelo no distingue ausencia confirmada de dato no
+#     documentado; ver Q26).
 CANONICAL_WEIGHTS: Dict[str, float] = {
     "water_quality": 0.30,
     "sea_state": 0.20,
-    "relative_pressure": 0.20,
     "solar_exposure": 0.15,
-    "services": 0.15,
 }
-
-# Cobertura mínima de datos (fracción de peso con dato real) para emitir un score
-# numérico. Decisión de producto explícita: por debajo de este valor el resultado
-# combinaría más incógnitas que datos y aparentaría una confianza inexistente, de
-# modo que se declara desconocido (FR-003, FR-012).
-MIN_DATA_COVERAGE: float = 0.5
 
 # Etiqueta explícita del indicador de presión (FR-014): es relativo y no un
 # límite ecológico oficial.
@@ -107,16 +111,6 @@ _QUALITY_SCORES: Dict[WaterQuality, float] = {
     WaterQuality.sufficient: 50.0,
     WaterQuality.poor: 0.0,
 }
-
-# Servicios/instalaciones verificados que contribuyen a la comodidad y al acceso.
-_SERVICE_KEYS: Tuple[str, ...] = (
-    "has_lifeguard",
-    "has_shade",
-    "has_accessibility",
-    "has_parking",
-    "has_showers",
-    "has_kiosk",
-)
 
 
 def _as_float(value) -> Optional[float]:
@@ -168,38 +162,20 @@ def calculate_solar_exposure_score(uv_index) -> Optional[float]:
     return _SOLAR_BEYOND
 
 
-def calculate_services_score(beach: dict) -> Optional[float]:
-    """Cobertura de servicios verificados (0..100) o ``None`` si no consta ninguno.
-
-    Limitación conocida (registrada en ``docs/OPEN_QUESTIONS.md``): el modelo guarda
-    los servicios como booleanos con valor por defecto ``False``, así que no puede
-    distinguir "no disponible" de "no documentado". Se trata ``False`` como "no
-    disponible" mientras el modelo no exprese el desconocido (FR-003).
-    """
-    present = [bool(beach[key]) for key in _SERVICE_KEYS if key in beach]
-    if not present:
-        return None
-    return round(100.0 * sum(present) / len(present), 1)
+# --- Indicador de presión relativa (no es un factor del score) ----------------
 
 
 def relative_pressure(occupation) -> Optional[float]:
     """Indicador de presión **relativa** derivado de la ocupación (0..1).
 
     Devuelve ``None`` si la ocupación es desconocida: nunca ``0``, que afirmaría
-    "sin presión". Es un indicador relativo, no una capacidad oficial (FR-014).
+    "sin presión". Es un indicador relativo, no una capacidad oficial (FR-014) y
+    **no** participa en el score (FR-007).
     """
     value = _as_float(occupation)
     if value is None:
         return None
     return min(1.0, max(0.0, value / 100.0))
-
-
-def calculate_pressure_score(occupation) -> Optional[float]:
-    """Idoneidad (0..100) derivada de la presión **relativa** o ``None`` si es desconocida."""
-    pressure = relative_pressure(occupation)
-    if pressure is None:
-        return None
-    return round((1.0 - pressure) * 100.0, 1)
 
 
 # --- Condiciones no compensables ----------------------------------------------
@@ -230,9 +206,18 @@ def non_compensable_exclusions(beach: dict) -> Tuple[str, ...]:
 class BeachScore:
     """Resultado canónico para una playa.
 
-    ``score`` es ``None`` cuando hay una condición no compensable o cuando la
-    cobertura de datos es insuficiente: "desconocido" es un estado explícito
-    (FR-003, FR-012), nunca un número inventado.
+    ``score`` es ``None`` cuando hay una condición no compensable o cuando no
+    están documentados **todos** los factores puntuados: "desconocido" es un
+    estado explícito (FR-003, FR-012), nunca un número fabricado ni un valor por
+    defecto.
+
+    ``coverage`` es la fracción del peso puntuado que tiene dato; un score
+    numérico exige ``coverage == 1.0``. Sirve de diagnóstico (qué falta lo
+    detalla ``factors``) y para que un consumidor no trate una puntuación parcial
+    como si tuviera la fiabilidad de una completa.
+
+    ``relative_pressure`` es un **indicador** etiquetado (FR-014); no es un factor
+    del score (FR-007).
     """
 
     score: Optional[float]
@@ -245,14 +230,11 @@ class BeachScore:
 def evaluate_beach(beach: dict) -> BeachScore:
     """Evalúa una playa con el scoring canónico y devuelve el resultado completo."""
     exclusions = non_compensable_exclusions(beach)
-    pressure = relative_pressure(beach.get("current_occupation"))
 
     factors: Dict[str, Optional[float]] = {
         "water_quality": calculate_quality_score(beach.get("water_quality")),
         "sea_state": calculate_sea_state_score(beach.get("wave_height")),
-        "relative_pressure": calculate_pressure_score(beach.get("current_occupation")),
         "solar_exposure": calculate_solar_exposure_score(beach.get("uv_index")),
-        "services": calculate_services_score(beach),
     }
 
     total_weight = sum(CANONICAL_WEIGHTS.values())
@@ -261,27 +243,17 @@ def evaluate_beach(beach: dict) -> BeachScore:
     )
     coverage = round(known_weight / total_weight, 3)
 
-    if exclusions or coverage < MIN_DATA_COVERAGE:
-        return BeachScore(
-            score=None,
-            coverage=coverage,
-            factors=factors,
-            exclusions=exclusions,
-            relative_pressure=pressure,
-        )
+    score: Optional[float] = None
+    if not exclusions and all(value is not None for value in factors.values()):
+        weighted = sum(CANONICAL_WEIGHTS[name] * value for name, value in factors.items())
+        score = round(weighted / total_weight, 1)
 
-    weighted = sum(
-        CANONICAL_WEIGHTS[name] * value
-        for name, value in factors.items()
-        if value is not None
-    )
-    score = round(weighted / known_weight, 1)
     return BeachScore(
         score=score,
         coverage=coverage,
         factors=factors,
         exclusions=exclusions,
-        relative_pressure=pressure,
+        relative_pressure=relative_pressure(beach.get("current_occupation")),
     )
 
 
@@ -289,6 +261,7 @@ def calculate_overall_score(beach: dict) -> Optional[float]:
     """Score canónico de comparación (0..100) o ``None`` si es desconocido.
 
     Punto de entrada único (FR-016). Devuelve un número **solo** cuando la playa
-    no tiene condiciones no compensables y hay cobertura de datos suficiente.
+    no tiene condiciones no compensables y están documentados todos los factores
+    puntuados; en otro caso declara información insuficiente (FR-012).
     """
     return evaluate_beach(beach).score

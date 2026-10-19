@@ -86,6 +86,10 @@ divergencia.
 
 #### D2-bis — Pesos y umbrales del scoring canónico (implementado en T006)
 
+> **Corregido por D2-ter** (auditoría semántica de T006): el número de factores, la lista de
+> factores puntuados y la regla de cobertura de este apartado quedaron **reemplazados**. Consúltese
+> D2-ter antes de usar esta tabla.
+
 **Decisión**: el score canónico de comparación (etapa 2 de D1) se define en `src/utils/scoring.py`
 con **cinco factores y pesos explícitos** que suman 1.0:
 
@@ -121,11 +125,63 @@ restricciones oficiales, incompatibilidad ambiental y datos insuficientes desde 
 las expondrá en `eligibility_conditions`. Se mantiene en un único lugar para no duplicar la regla
 (Principio IV).
 
+#### D2-ter — Corrección tras la auditoría semántica de T006 (FR-007, FR-003, cobertura)
+
+La auditoría del scoring de T006 encontró tres desviaciones respecto de la spec. Se corrigen aquí y
+en el código (commit correctivo), no en el código sin registro (Principios IV y VIII).
+
+**(1) FR-007 — la baja ocupación no debe premiarse todavía.**
+Interpretación vigente de FR-007: prohíbe promover una playa *únicamente* por su baja afluencia
+cuando exista vulnerabilidad, restricción o capacidad no justificada. El sistema **todavía no puede
+evaluar** esas tres condiciones (los metadatos de T004 existen pero no los consume nadie; la etapa de
+elegibilidad es T012). La lectura segura es, por tanto: **mientras no existan esos criterios, la
+ocupación no se pondera**. Consecuencia: la ocupación deja de ser un factor del score y
+`CANONICAL_WEIGHTS` pierde el 0.20 que tenía; sigue expuesta como **indicador relativo etiquetado**
+(FR-014), disponible para cuando T012/T013 puedan usarlo con criterios.
+Alternativas: (a) mantener el peso 0.20 asumiendo que "preferir menos presión" no es "promover
+únicamente por baja afluencia" — descartada: hoy el sistema no puede descartar que exista una
+vulnerabilidad, restricción o capacidad no justificada, así que el premio sería automático e
+injustificado; (b) retirar también el indicador — descartada: FR-014 admite y pide etiquetar
+indicadores de presión.
+
+**(2) FR-003 — los servicios no se puntúan.**
+`has_*` son `Boolean` con `default=False` tanto en el ORM (`src/models.py`) como en `BeachBase`
+(`src/schemas.py`), y la columna admite `NULL`. El modelo, por tanto, **no distingue "ausencia
+confirmada" de "no documentado"**: un `False` puede ser cualquiera de las dos cosas. Puntuarlos
+trataría un valor por defecto como observación verificada (FR-003) y, además, `coverage` los contaba
+como datos disponibles (véase (3)). Se retira el factor `services` del score y de `coverage`; el
+bloqueo para volver a incorporarlo queda en `docs/OPEN_QUESTIONS.md` (Q26).
+Alternativa: tratar `NULL` como desconocido y `False` como ausencia confirmada — descartada por
+ahora: un `False` por defecto seguiría siendo indistinguible de una ausencia verificada, es decir,
+seguiría simulando una calidad de datos inexistente.
+
+**(3) Cobertura — un score numérico exige todos los factores documentados.**
+`coverage` medía la *presencia de valores en el modelo*, no la disponibilidad de información fiable
+(con `_beach_to_dict` los seis servicios siempre están presentes, así que el factor se contaba como
+conocido aunque fueran valores por defecto). Además, la renormalización hacía que retirar un factor
+desfavorable **subiera** la puntuación (medido en T006: 77.8 con UV y oleaje ausentes frente a 75.8
+con todos los datos) y ningún consumidor podía distinguir esa puntuación parcial de una completa. Se
+sustituye por la regla: **el score numérico solo existe si TODOS los factores puntuados están
+documentados** (`coverage == 1.0`); en otro caso el resultado es `None` = información insuficiente
+(FR-012). Se elimina `MIN_DATA_COVERAGE` (umbral arbitrario que deja de hacer falta) y la
+renormalización; `coverage` se conserva como diagnóstico.
+Alternativa: conservar la renormalización y documentar la limitación con un criterio de integración —
+descartada: corregir la regla es simple y elimina el engaño en lugar de solo advertirlo.
+
+**Estado resultante**: factores puntuados `water_quality` 0.30, `sea_state` 0.20 y `solar_exposure`
+0.15 (pesos **relativos**: el score es su media ponderada normalizada, así que no hace falta que sumen
+1.0). Efecto sobre los datos del seed (20 playas): las 20 tienen calidad, oleaje y UV documentados →
+cobertura 1.0; la ordenación ya no depende de la ocupación.
+
+**Reversión**: cuando T012 aporte elegibilidad/vulnerabilidad/capacidad, y exista una fuente de
+procedencia para los servicios, ambos podrán reincorporarse como factores con criterios explícitos.
+
 ### D3 — La baja ocupación no es un mérito por sí mismo
 
 **Decisión**: la ocupación se trata como **indicador de presión relativa**, no como "cuanto menos,
 mejor". Una playa vacía puede desaconsejarse por vulnerabilidad, restricción o capacidad no
-justificada (FR-007).
+justificada (FR-007). En el score canónico la ocupación **no se pondera** mientras no puedan
+evaluarse esas condiciones (D2-ter).
 **Rationale**: Principio I y objetivo de producto; evita trasladar la presión.
 **Alternativas**: mantener `100 - ocupación` como bonus — descartada por contradecir el objetivo.
 

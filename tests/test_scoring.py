@@ -1,7 +1,12 @@
-"""Unit tests for the single canonical scoring (T006 / T007).
+"""Unit tests for the single canonical scoring (T006 / T007 + semantic audit).
 
 Covers determinism, bounds, missing data, data coverage, non-compensable
-conditions and the labelled relative-pressure indicator.
+conditions, the labelled relative-pressure indicator, and the two business
+properties revisited by the audit:
+
+* **FR-007**: a lower occupation must not, by itself, give a beach an advantage.
+* **FR-003**: services whose values come from model defaults must be neither a
+  reward nor a penalty, and unknown data must not be replaced by a value.
 
 All beach dictionaries here are **synthetic fixtures** that only exercise the
 scoring rules. They are NOT real observations and must never be presented as
@@ -12,13 +17,10 @@ import pytest
 
 from src.utils.scoring import (
     CANONICAL_WEIGHTS,
-    MIN_DATA_COVERAGE,
     PRESSURE_LABEL,
     calculate_overall_score,
-    calculate_pressure_score,
     calculate_quality_score,
     calculate_sea_state_score,
-    calculate_services_score,
     calculate_solar_exposure_score,
     evaluate_beach,
     non_compensable_exclusions,
@@ -54,8 +56,22 @@ def _beach(**overrides) -> dict:
 # --- Configuración y determinismo --------------------------------------------
 
 
-def test_canonical_weights_sum_to_one():
-    assert sum(CANONICAL_WEIGHTS.values()) == pytest.approx(1.0)
+def test_canonical_weights_are_relative_and_positive():
+    assert all(weight > 0 for weight in CANONICAL_WEIGHTS.values())
+
+
+def test_scored_factors_are_exactly_the_documented_ones():
+    assert set(CANONICAL_WEIGHTS) == {"water_quality", "sea_state", "solar_exposure"}
+
+
+def test_occupation_is_not_a_scored_factor():
+    assert "current_occupation" not in CANONICAL_WEIGHTS
+    assert "relative_pressure" not in CANONICAL_WEIGHTS
+
+
+def test_services_are_not_a_scored_factor():
+    assert not set(SERVICE_KEYS) & set(CANONICAL_WEIGHTS)
+    assert "services" not in CANONICAL_WEIGHTS
 
 
 def test_scoring_is_deterministic():
@@ -78,7 +94,61 @@ def test_score_is_always_within_bounds():
                     assert score is None or 0.0 <= score <= 100.0
 
 
-# --- Datos ausentes (lo desconocido no es favorable) --------------------------
+# --- FR-007: la baja ocupación no da ventaja por sí sola ---------------------
+
+
+def test_lower_occupation_gives_no_unjustified_advantage():
+    """FR-007: two beaches identical except for occupation get the SAME score."""
+    empty = _beach(current_occupation=5)
+    crowded = _beach(current_occupation=95)
+
+    assert calculate_overall_score(empty) == calculate_overall_score(crowded)
+    assert calculate_overall_score(empty) is not None
+
+
+def test_low_occupation_alone_does_not_override_an_exclusion():
+    """D3/FR-007: an empty beach with a safety exclusion is not promoted."""
+    result = evaluate_beach(_beach(current_occupation=0, flag_color="red"))
+    assert result.score is None
+
+
+def test_pressure_remains_available_as_an_indicator():
+    """FR-014: occupation is still exposed, but only as a labelled indicator."""
+    assert relative_pressure(5) < relative_pressure(95)
+    assert "relativa" in PRESSURE_LABEL
+    assert "no capacidad oficial" in PRESSURE_LABEL
+
+
+# --- FR-003: los servicios por defecto no son observaciones ------------------
+
+
+def test_services_do_not_affect_the_score():
+    """FR-003: undocumented or False service flags are neither reward nor penalty."""
+    all_true = _beach(**{key: True for key in SERVICE_KEYS})
+    all_false = _beach(**{key: False for key in SERVICE_KEYS})
+    none_stated = _beach()
+    for key in SERVICE_KEYS:
+        none_stated.pop(key)
+
+    scores = {calculate_overall_score(beach) for beach in (all_true, all_false, none_stated)}
+    assert len(scores) == 1
+    assert scores.pop() is not None
+
+
+def test_services_and_occupation_do_not_count_towards_coverage():
+    """`coverage` must only account for what the system can actually attest."""
+    no_services = _beach()
+    for key in SERVICE_KEYS:
+        no_services.pop(key)
+    no_occupation = _beach()
+    no_occupation.pop("current_occupation")
+
+    assert evaluate_beach(_beach()).coverage == 1.0
+    assert evaluate_beach(no_services).coverage == 1.0
+    assert evaluate_beach(no_occupation).coverage == 1.0
+
+
+# --- Datos ausentes (lo desconocido no es favorable) -------------------------
 
 
 def test_unknown_quality_is_none_not_an_invented_value():
@@ -92,6 +162,12 @@ def test_unknown_sea_state_and_solar_are_none():
     assert calculate_solar_exposure_score(None) is None
 
 
+def test_missing_data_is_not_replaced_by_a_favourable_value():
+    """FR-003: the old `uv_index=None -> 75.0` must never come back."""
+    assert evaluate_beach(_beach(uv_index=None)).score is None
+    assert evaluate_beach(_beach(wave_height=None)).score is None
+
+
 def test_empty_beach_is_unknown_not_favourable():
     result = evaluate_beach({})
     assert result.score is None
@@ -99,18 +175,12 @@ def test_empty_beach_is_unknown_not_favourable():
     assert result.relative_pressure is None
 
 
-def test_unknown_factor_is_omitted_and_lowers_coverage():
+def test_missing_factor_yields_insufficient_information():
+    """FR-012: one missing factor is enough to declare insufficient information."""
     result = evaluate_beach(_beach(uv_index=None))
-    assert result.factors["solar_exposure"] is None
-    assert result.coverage < 1.0
-    assert result.score is not None
-
-
-def test_insufficient_coverage_declares_unknown():
-    # Only the occupation is known -> coverage 0.2 < MIN_DATA_COVERAGE.
-    result = evaluate_beach({"current_occupation": 10})
-    assert result.coverage < MIN_DATA_COVERAGE
     assert result.score is None
+    assert result.coverage < 1.0
+    assert result.factors["solar_exposure"] is None
 
 
 def test_evaluate_reports_factors_coverage_and_pressure():
@@ -119,6 +189,7 @@ def test_evaluate_reports_factors_coverage_and_pressure():
     assert set(result.factors) == set(CANONICAL_WEIGHTS)
     assert result.relative_pressure == 0.5
     assert result.exclusions == ()
+    assert result.score is not None and 0.0 <= result.score <= 100.0
 
 
 # --- Condiciones no compensables (FR-002) ------------------------------------
@@ -137,12 +208,6 @@ def test_red_flag_is_not_compensated_by_a_perfect_beach():
     assert result.exclusions
     # The very same beach without the prohibition does score.
     assert evaluate_beach({**perfect_but_red, "flag_color": "green"}).score is not None
-
-
-def test_low_occupation_alone_does_not_override_an_exclusion():
-    """D3/FR-007: an empty beach with a safety exclusion is not promoted."""
-    result = evaluate_beach(_beach(current_occupation=0, flag_color="red"))
-    assert result.score is None
 
 
 def test_jellyfish_is_a_non_compensable_condition():
@@ -197,25 +262,12 @@ def test_solar_bands(uv, expected):
     assert calculate_solar_exposure_score(uv) == expected
 
 
-# --- Servicios ----------------------------------------------------------------
-
-
-def test_services_score_none_when_absent():
-    assert calculate_services_score({}) is None
-
-
-def test_services_score_bounds():
-    assert calculate_services_score({key: True for key in SERVICE_KEYS}) == 100.0
-    assert calculate_services_score({key: False for key in SERVICE_KEYS}) == 0.0
-
-
 # --- Presión relativa (D3, FR-014) -------------------------------------------
 
 
 def test_unknown_occupation_does_not_assert_zero_pressure():
     """`None` is not `0`: unknown must never claim "no pressure"."""
     assert relative_pressure(None) is None
-    assert calculate_pressure_score(None) is None
 
 
 def test_relative_pressure_is_bounded_and_monotonic():
@@ -224,8 +276,3 @@ def test_relative_pressure_is_bounded_and_monotonic():
     assert relative_pressure(150) == 1.0
     assert relative_pressure(-10) == 0.0
     assert relative_pressure(20) < relative_pressure(80)
-
-
-def test_pressure_is_labelled_relative_not_official():
-    assert "relativa" in PRESSURE_LABEL
-    assert "no capacidad oficial" in PRESSURE_LABEL
