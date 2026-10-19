@@ -1,35 +1,46 @@
 # SANDAM Dependencies
+# Instalación: pip install -r requirements.txt
 
 # Framework
-fastapi==0.115.0
-uvicorn[standard]==0.30.0
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
 
 # Database
-sqlalchemy[asyncio]==2.0.35
-asyncpg==0.30.0
-alembic==1.13.1
+sqlalchemy[asyncio]>=2.0.35,<2.1
+asyncpg>=0.30,<1.0
+alembic>=1.13,<2.0
+aiosqlite>=0.20,<1.0
 
 # Validation
-pydantic==2.9.0
-pydantic-settings==2.5.0
+pydantic>=2.9,<3.0
+pydantic-settings>=2.5,<3.0
+
+# HTTP / external data
+requests>=2.32,<3.0
+httpx>=0.27,<1.0
+beautifulsoup4>=4.12,<5.0
+lxml>=5.0,<7.0
+
+# Data / visualisation
+pandas>=2.2,<3.0
+geopandas>=1.0,<2.0
+shapely>=2.0,<3.0
+plotly>=5.22,<7.0
+folium>=0.17,<1.0
+
+# Dashboard
+streamlit>=1.40,<2.0
+streamlit-folium>=0.20,<1.0
+dash>=2.17,<5.0
 
 # Utilities
-python-dotenv==1.0.1
-python-multipart==0.0.12
+python-dotenv>=1.0,<2.0
+python-multipart>=0.0.12,<1.0
 
 # Testing
-pytest==8.3.2
-pytest-asyncio==0.24.0
-pytest-cov==5.0.0
-httpx==0.27.0
-
-# Type checking
-mypy==1.11.0
-types-requests==2.32.0.20240622
+pytest>=8.3,<10.0
+pytest-asyncio>=0.24,<2.0
+pytest-cov>=5.0,<8.0
 
 # Linting
-ruff==0.6.2
-
-# Documentation
-mkdocs==1.6.0
-mkdocs-material==9.5.32
+ruff>=0.6,<1.0
