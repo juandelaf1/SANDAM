@@ -46,6 +46,8 @@ Ejecutados y comprobados en este repositorio (Windows PowerShell, Python 3.13, v
 - **Tests**: `pytest` — usan SQLite en memoria (`sqlite+aiosqlite:///:memory:`), no requieren PostgreSQL.
 - **Lint**: `ruff check src tests seed_data.py`.
 - **Arrancar la API**: `uvicorn src.main:app --reload` — `http://localhost:8000`, docs en `/docs`.
+- **Migraciones**: `alembic upgrade head` / `alembic current` / `alembic downgrade -1` (la URL sale
+  de `DATABASE_URL`; ver `docs/MIGRATIONS.md`).
 - **Docker (API + PostgreSQL)**: `docker compose up --build -d` y `docker compose exec api python seed_data.py`.
 
 ## 5. Desarrollo guiado por especificaciones (SDD)
@@ -72,10 +74,15 @@ Ejecutados y comprobados en este repositorio (Windows PowerShell, Python 3.13, v
 
 ## 8. Migraciones y cambios de esquema
 
-- Todo cambio de esquema exige una **migración explícita y reproducible** (ver
-  `docs/adr/0003-migraciones-alembic.md`).
-- Las migraciones deben poder revertirse. No usar `create_all()` como sustituto de una migración.
-- Mientras Alembic no esté operativo, **no introducir cambios de esquema**: documentarlos.
+- El esquema lo gestiona **Alembic** (ver `docs/adr/0003-migraciones-alembic.md` y
+  `docs/MIGRATIONS.md`). La aplicación **no** crea tablas al arrancar; `create_all()` está retirado
+  del arranque y solo lo usan los tests.
+- Todo cambio de esquema exige una migración explícita, versionada y reversible
+  (`alembic revision --autogenerate -m "..."`, revisada a mano).
+- Comandos: `alembic upgrade head`, `alembic current`, `alembic downgrade -1`.
+- Aplicar migraciones es un paso **explícito** antes de desplegar; nunca en el arranque de FastAPI.
+- Adopción de una BD existente: ver `docs/MIGRATIONS.md` (`alembic stamp` solo tras comprobar
+  equivalencia con la revisión inicial).
 
 ## 9. Cambios en la API
 

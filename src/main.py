@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
-from src.database import init_db
+from src.database import engine
 from src.api import (
     beaches,
     search,
@@ -26,11 +26,17 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # The schema is managed by Alembic (see docs/MIGRATIONS.md). The application
+    # never creates tables at startup; migrations are an explicit operator step.
+    # We only probe connectivity so an unavailable database is visible in the
+    # logs (degraded mode); /health/ready reports it too.
+    from sqlalchemy import text
+
     try:
-        await init_db()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
     except Exception as exc:
-        # Keep the API available in degraded mode (health/ready reports the DB state).
-        logger.warning("Database initialisation failed; starting in degraded mode: %s", exc)
+        logger.warning("Database unavailable; starting in degraded mode: %s", exc)
     yield
 
 
@@ -75,8 +81,6 @@ async def health_check():
 @app.get("/health/ready")
 async def readiness_check():
     from sqlalchemy import text
-
-    from src.database import engine
 
     try:
         async with engine.connect() as conn:

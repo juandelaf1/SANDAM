@@ -1,0 +1,19 @@
+# Alembic (SANDAM)
+
+Migraciones de esquema de SANDAM. La URL de base de datos se lee de
+`DATABASE_URL` (o `.env`) a través de `src/config.py`; no se versiona ninguna
+credencial.
+
+Operaciones habituales (desde la raíz del repositorio):
+
+```bash
+alembic upgrade head                       # aplica todas las migraciones (BD nueva)
+alembic current                            # revisión aplicada actualmente
+alembic history                            # historial de revisiones
+alembic downgrade -1                       # revierte la última revisión
+alembic revision --autogenerate -m "msg"   # nueva migración (revisar SIEMPRE el resultado)
+alembic stamp head                         # adopta una BD existente ya equivalente (ver docs/MIGRATIONS.md)
+```
+
+El procedimiento completo (BD nueva y adopción de BD existente) está en
+[`../docs/MIGRATIONS.md`](../docs/MIGRATIONS.md).

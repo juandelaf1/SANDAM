@@ -26,8 +26,10 @@ independientes.
 
 **Purpose**: Confirmar la línea base y unificar la documentación autoritativa.
 
-- [ ] T001 Verificar y registrar la línea base real: ejecutar `pytest` y `ruff check src tests seed_data.py` y anotar resultados (sin cambios de código).
-- [ ] T002 [P] Unificar la fuente de verdad documental: crear `docs/PRODUCT_VISION.md` y añadir banner de "histórico/obsoleto" a `docs/CONTEXTO_MAESTRO.md` y `docs/PROJECT_CONTEXT.md`; alinear ámbito a Mallorca en `docs/API_GUIDE.md`.
+- [x] T001 Verificar y registrar la línea base real: ejecutar `pytest` y `ruff check src tests seed_data.py` y anotar resultados (sin cambios de código).
+  - _Completada en la adopción SDD: `ruff` OK; 32 tests OK (2026-10-19)._
+- [x] T002 [P] Unificar la fuente de verdad documental: crear `docs/PRODUCT_VISION.md` y añadir banner de "histórico/obsoleto" a `docs/CONTEXTO_MAESTRO.md` y `docs/PROJECT_CONTEXT.md`; alinear ámbito a Mallorca en `docs/API_GUIDE.md`.
+  - _Completada en la adopción SDD (commit `docs(spec-001)`)._
 
 **Checkpoint**: línea base conocida y documentación alineada.
 
@@ -39,7 +41,16 @@ independientes.
 
 **⚠️ CRITICAL**: ninguna historia puede empezar hasta terminar esta fase.
 
-- [ ] T003 Introducir Alembic y una migración inicial segura del esquema actual: `alembic.ini`, `alembic/env.py`, `alembic/versions/0001_initial.py` (ver `docs/adr/0003-migraciones-alembic.md`).
+- [x] T003 Introducir Alembic y una migración inicial segura del esquema actual: `alembic.ini`, `alembic/env.py`, `alembic/versions/0001_initial.py` (ver `docs/adr/0003-migraciones-alembic.md`).
+  - **Definición de terminado (T003)**: `alembic upgrade head` crea el esquema en una BD nueva; el
+    esquema coincide con `src/models.py` (`alembic check` sin operaciones pendientes); `alembic
+    downgrade base` revierte el esquema; `create_all()` retirado del arranque (solo lo usan los
+    tests); documentado el alta de BD nueva y la adopción de BD existente (`docs/MIGRATIONS.md`);
+    lint y tests en verde.
+  - **Evidencia (2026-10-19)**: migración aplicada en SQLite idéntica a los modelos (30 columnas,
+    5 índices); `alembic check` → "No new upgrade operations detected"; `downgrade base` OK;
+    `stamp head` + `upgrade` no-op OK; SQL offline PostgreSQL válido; `ruff` OK; 32 tests OK.
+  - **Límite**: no verificado contra PostgreSQL real (Docker no disponible en el entorno).
 - [ ] T004 [P] Añadir campos de trazabilidad/capacidad a `src/models.py` (`protection_status`, `access_restrictions`, `capacity_reference`, `capacity_method`, `vulnerability_level`) y su migración `alembic/versions/0002_metadata_fields.py`. Regla: `capacity_reference` sin `capacity_method` es inválido.
 - [ ] T005 [P] Definir esquemas aditivos de respuesta en `src/schemas.py` (`DataQuality`, `Explanation`, `Recommendation`, `DondeIrResponse`) según `specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml`.
 - [ ] T006 Implementar el **scoring canónico único** en `src/utils/scoring.py` (una sola implementación; documentar cada peso/umbral con su justificación).
@@ -106,7 +117,7 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implementar el etiquetado de calidad del dato y la procedencia (FR-004, FR-015) en `src/utils/donde_ir`/`src/crud.py` (lectura de metadatos).
+- [ ] T021 [US3] Implementar el etiquetado de calidad del dato y la procedencia (FR-004, FR-015) en `src/crud.py` y `src/utils/recommendation_engine.py` (lectura de metadatos desde observaciones).
 - [ ] T022 [US3] Implementar los estados `insufficient_data` y `no_suitable_alternatives` (FR-012) en `src/api/donde_ir.py` y su reflejo en `src/schemas.py`.
 - [ ] T023 [US3] Implementar degradación explícita ante fallo de fuentes externas (FR-009) en `src/integrations/*` y `src/api/weather.py`.
 

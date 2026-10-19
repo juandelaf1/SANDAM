@@ -2,9 +2,9 @@
 
 import asyncio
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
-from src.database import async_session_maker, init_db
+from src.database import async_session_maker, engine
 from src.models import Beach, Tide, FlagColor, WaterQuality, DataStatus, utcnow
 
 
@@ -515,7 +515,14 @@ MALLORCA_BEACHES = [
 
 
 async def seed_database():
-    await init_db()
+    # Schema is owned by Alembic; seeding never creates tables.
+    async with engine.connect() as conn:
+        tables = await conn.run_sync(lambda sync_conn: inspect(sync_conn).get_table_names())
+    if "beaches" not in tables:
+        raise SystemExit(
+            "Table 'beaches' not found. Apply migrations first: "
+            "'alembic upgrade head' (see docs/MIGRATIONS.md)."
+        )
 
     async with async_session_maker() as session:
         existing = await session.execute(select(Beach.name))

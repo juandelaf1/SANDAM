@@ -44,6 +44,7 @@
 ```bash
 cp .env.example .env
 docker compose up --build -d
+docker compose exec api alembic upgrade head   # aplica el esquema (Alembic)
 docker compose exec api python seed_data.py   # carga 20 playas de Mallorca
 # API:      http://localhost:8000
 # Swagger:  http://localhost:8000/docs
@@ -57,13 +58,31 @@ python -m venv .venv
 pip install -r requirements.txt
 
 cp .env.example .env              # ajusta DATABASE_URL
-# Arranca PostgreSQL (docker compose up -d postgres) y carga datos:
+# Arranca PostgreSQL (docker compose up -d postgres), aplica el esquema y carga datos:
+alembic upgrade head              # aplica migraciones (la app NO crea tablas)
 python seed_data.py
 
 uvicorn src.main:app --reload     # http://localhost:8000
 ```
 
 La API arranca en **modo degradado** si la base de datos no responde: `/health` sigue en 200 y `/health/ready` indica el estado real de la conexión.
+
+---
+
+## Database migrations
+
+El esquema lo gestiona **Alembic**; la aplicación **no** crea ni altera tablas al arrancar.
+
+```bash
+alembic upgrade head     # aplica todas las migraciones (BD nueva)
+alembic current          # revisión aplicada actualmente
+alembic downgrade -1     # revierte la última revisión
+```
+
+- **BD nueva**: `alembic upgrade head` y después `python seed_data.py`.
+- **BD existente** creada antes de Alembic: **no** lanzar `upgrade` a ciegas. Comparar el esquema
+  real con la revisión inicial y usar `alembic stamp head` **solo** si son equivalentes.
+  Procedimiento completo en [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md).
 
 ---
 
