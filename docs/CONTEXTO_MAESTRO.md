@@ -129,7 +129,7 @@ SI viento_direccion == "SW":
 ## 8. API KEYS CONFIGURADAS
 
 - **AEMET**: Configurada en `.env` (rate limited)
-- **SOCIB**: `fg1XJ43jxjkQ83o36VFcchho26I869v5` (acceso limitado)
+- **SOCIB**: Configurada en `.env` como `SOCIB_API_KEY` (acceso limitado)
 
 ---
 
