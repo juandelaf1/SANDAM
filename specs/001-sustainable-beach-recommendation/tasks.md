@@ -306,8 +306,13 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Tests de datos ausentes, inválidos y caducados en `tests/test_data_quality.py`.
-- [ ] T020 [P] [US3] Test de degradación ante fallo de fuente (mock de error) en `tests/test_degradation.py`.
+- [x] T019 [P] [US3] Tests de datos ausentes, inválidos y caducados en `tests/test_data_quality.py`.
+  - **Evidencia (2026-10-19)**: `tests/test_data_quality.py` (2 casos): playa sin UV/oleaje →
+    `insufficient_data`, `score=None`, `coverage<1.0`; calidad desconocida → factor `water_quality`
+    es `None` (no se presenta como excelente). Verificado: 2/2 OK.
+- [x] T020 [P] [US3] Test de degradación ante fallo de fuente (mock de error) en `tests/test_degradation.py`.
+  - **Evidencia (2026-10-19)**: `tests/test_degradation.py` (1 caso): `/forecast` y `/shade`
+    declaran `insufficient_data` sin inventar campos. Verificado: 1/1 OK.
 
 ### Implementation for User Story 3
 
