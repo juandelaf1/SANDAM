@@ -1,3 +1,9 @@
+> ⚠️ **DOCUMENTO HISTÓRICO (OBSOLETO).** No es fuente de verdad y contiene información desalineada
+> con el sistema real (ámbito, estructura, secretos). La visión canónica está en
+> [`PRODUCT_VISION.md`](PRODUCT_VISION.md) y los principios en
+> [`.specify/memory/constitution.md`](../.specify/memory/constitution.md). Se conserva solo por
+> valor histórico. No debe usarse para tomar decisiones.
+
 # 🏖️ SANDAM 2026 - CONTEXTO MAESTRO DEL PROYECTO
 
 ## 1. VISIÓN DEL PRODUCTO

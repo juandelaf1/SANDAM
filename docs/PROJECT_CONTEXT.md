@@ -1,3 +1,9 @@
+> ⚠️ **DOCUMENTO HISTÓRICO (OBSOLETO).** Describe Cataluña y una estructura de carpetas que no
+> corresponden al sistema real (Mallorca). La visión canónica está en
+> [`PRODUCT_VISION.md`](PRODUCT_VISION.md) y los principios en
+> [`.specify/memory/constitution.md`](../.specify/memory/constitution.md). Se conserva solo por
+> valor histórico. No debe usarse para tomar decisiones.
+
 # 🏖️ SANDAM - Project Context
 
 ## 📋 Resumen del Proyecto

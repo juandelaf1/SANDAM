@@ -149,6 +149,28 @@ docs/                 # project context and guides
 
 ---
 
+## Documentation
+
+Documentación autoritativa (fuente de verdad):
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) | Visión, propósito y ámbito del producto |
+| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | Principios y gobernanza |
+| [`AGENTS.md`](AGENTS.md) | Reglas operativas para agentes |
+| [`specs/`](specs/) | Especificaciones funcionales (Spec-Driven Development) |
+| [`docs/adr/`](docs/adr/) | Decisiones arquitectónicas (ADR) |
+| [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) | Decisiones pendientes |
+
+> **Ámbito actual: Mallorca (Illes Balears).** `docs/CONTEXTO_MAESTRO.md` y `docs/PROJECT_CONTEXT.md`
+> son históricos (obsoletos) y no deben usarse como fuente de verdad.
+
+Este proyecto sigue **Spec-Driven Development** con GitHub Spec Kit (integración `opencode`).
+Los comandos están en `.opencode/commands/` (`/speckit.constitution`, `/speckit.specify`,
+`/speckit.plan`, `/speckit.tasks`, `/speckit.implement`, `/speckit.converge`).
+
+---
+
 ## Author
 
 **Juan de la Fuente** — [@juandelaf1](https://github.com/juandelaf1)

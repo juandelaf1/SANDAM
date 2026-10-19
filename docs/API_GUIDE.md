@@ -1,3 +1,7 @@
+> ℹ️ **Ámbito actual: Mallorca (Illes Balears).** Los ejemplos con playas de Cataluña
+> (p. ej. la Barceloneta) son heredados y no corresponden al ámbito inicial. Ver
+> [`PRODUCT_VISION.md`](PRODUCT_VISION.md).
+
 # 📖 SANDAM API Guide
 
 Guía completa de endpoints y ejemplos de uso.

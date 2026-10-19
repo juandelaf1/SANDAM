@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: SANDAM — Recomendación de playas (contrato)
+  version: 0.1.0
+  description: >
+    Contrato del endpoint de recomendación para la feature
+    001-sustainable-beach-recommendation. Preserva el contrato existente (FR-010):
+    los campos actuales se mantienen; los nuevos son **aditivos y opcionales**, de
+    modo que los clientes actuales siguen funcionando.
+
+paths:
+  /api/v1/donde-ir/ahora:
+    get:
+      summary: Recomienda playas elegibles ordenadas según presión y conveniencia
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: incluir_marginales
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: >
+            Lista de playas. Solo se incluyen como alternativas normales las
+            **elegibles**. Si no hay alternativas adecuadas, `recomendaciones` va
+            vacía y `status` lo declara.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DondeIrResponse"
+
+components:
+  schemas:
+    # ---- Envoltura de calidad del dato (nuevo, aditivo) ----
+    DataQuality:
+      type: object
+      description: >
+        Clasificación y procedencia de un valor (FR-004, FR-015). No sustituye a
+        los campos actuales; los acompaña.
+      properties:
+        nature:
+          type: string
+          enum: [observation, estimate, prediction, stale, unknown]
+        source: { type: string }
+        observed_at: { type: [string, "null"], format: date-time }
+        fetched_at: { type: [string, "null"], format: date-time }
+        valid_until: { type: [string, "null"], format: date-time }
+
+    Explanation:
+      type: object
+      description: Motivo legible por el que una playa se propone o descarta (FR-006).
+      properties:
+        reason: { type: string }
+        factors:
+          type: array
+          items: { type: string }
+
+    Recommendation:
+      type: object
+      description: >
+        Recomendación por playa. Los campos existentes se conservan; los nuevos son
+        aditivos.
+      properties:
+        # --- Contrato existente (se preserva) ---
+        nombre: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        distancia_km: { type: number }
+        tiempo_viaje_min: { type: integer }
+        hora_llegada: { type: string }
+        score_original: { type: number }
+        score_final: { type: number }
+        status: { type: string, enum: [recomendada, marginal, no_merece] }
+        color: { type: string }
+        sol_restante_min: { type: integer }
+        flags: { type: object }
+        # --- Aditivo (nuevo) ---
+        eligible:
+          type: boolean
+          description: Resultado de la etapa de elegibilidad (FR-001).
+        eligibility_conditions:
+          type: array
+          description: Condiciones de exclusión detectadas (vacío si es elegible).
+          items:
+            type: object
+            properties:
+              type: { type: string }
+              reason: { type: string }
+              source: { type: string }
+        pressure_relative:
+          type: number
+          description: Indicador de presión **relativa** (no umbral oficial) (FR-014).
+        explanation:
+          $ref: "#/components/schemas/Explanation"
+        data_quality:
+          type: object
+          description: Calidad del dato por variable relevante usada.
+          additionalProperties:
+            $ref: "#/components/schemas/DataQuality"
+
+    DondeIrResponse:
+      type: object
+      properties:
+        # --- Contrato existente (se preserva) ---
+        ubicacion_usuario:
+          type: object
+          properties:
+            lat: { type: number }
+            lon: { type: number }
+        hora_actual: { type: string }
+        atardecer: { type: string }
+        sol_restante: { type: string }
+        total_playas: { type: integer }
+        recomendaciones:
+          type: array
+          items: { $ref: "#/components/schemas/Recommendation" }
+        # --- Aditivo (nuevo) ---
+        status:
+          type: string
+          enum: [ok, no_suitable_alternatives, insufficient_data]
+          description: >
+            `no_suitable_alternatives` cuando ninguna playa cumple elegibilidad y
+            adecuación; `insufficient_data` cuando no hay datos suficientes (FR-012).
+        travel_time_is_estimate:
+          type: boolean
+          description: >
+            `true` mientras el tiempo de viaje sea una estimación (Haversine × factor),
+            no un cálculo de ruta (FR-013).
