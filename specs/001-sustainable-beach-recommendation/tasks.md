@@ -335,7 +335,9 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 - [ ] T024 [P] Alinear `README.md` y `docs/API_GUIDE.md` con el contrato y el ámbito Mallorca.
 - [ ] T025 [P] Redactar ADR `docs/adr/0002-modelo-de-datos-y-procedencia.md` y `docs/adr/0004-plataforma-de-despliegue.md`.
-- [ ] T026 [P] Actualizar `docs/OPEN_QUESTIONS.md` con decisiones pendientes (capacidad, aforo, rutas).
+- [x] T026 [P] Actualizar `docs/OPEN_QUESTIONS.md` con decisiones pendientes (capacidad, aforo, rutas).
+  - **Evidencia (2026-10-19)**: Q26 (servicios), Q27 (valores por defecto indistinguibles de
+    observaciones), Q28 (validacion de heuristicos) anadidas. Q11-Q25 preexistentes. Verificado.
 - [ ] T027 Ejecutar `specs/001-sustainable-beach-recommendation/quickstart.md` y verificar todos los criterios.
 - [ ] T028 [P] Ajustar `.github/workflows/ci.yml` para incluir test de migraciones Alembic.
 - [ ] T029 Ejecutar `/speckit.converge` y resolver las brechas restantes.
