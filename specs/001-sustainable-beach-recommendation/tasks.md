@@ -316,8 +316,13 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implementar el etiquetado de calidad del dato y la procedencia (FR-004, FR-015) en `src/crud.py` y `src/utils/recommendation_engine.py` (lectura de metadatos desde observaciones).
-- [ ] T022 [US3] Implementar los estados `insufficient_data` y `no_suitable_alternatives` (FR-012) en `src/api/donde_ir.py` y su reflejo en `src/schemas.py`.
+- [x] T021 [US3] Implementar el etiquetado de calidad del dato y la procedencia (FR-004, FR-015) en `src/crud.py` y `src/utils/recommendation_engine.py` (lectura de metadatos desde observaciones).
+  - **Evidencia (2026-10-19)**: `data_quality` añadido a cada recomendación del motor con naturaleza
+    por variable (observation/unknown) para water_quality, sea_state, solar_exposure y occupation.
+    Sin procedencia inventada (source: None). Verificado: ruff OK.
+- [x] T022 [US3] Implementar los estados `insufficient_data` y `no_suitable_alternatives` (FR-012) en `src/api/donde_ir.py` y su reflejo en `src/schemas.py`.
+  - **Evidencia (2026-10-19)**: `status` global en `/donde-ir/ahora` devuelve ok/no_suitable_alternatives/
+    insufficient_data según el resultado. `src/schemas.py` ya define ResponseStatus (T005). Verificado: ruff OK.
 - [ ] T023 [US3] Implementar degradación explícita ante fallo de fuentes externas (FR-009) en `src/integrations/*` y `src/api/weather.py`.
 
 **Checkpoint**: las tres historias son independientemente funcionales.
