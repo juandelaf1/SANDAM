@@ -1,20 +1,105 @@
-"""Prediction endpoints for SANDAM API"""
+"""Prediction endpoints for SANDAM API (T008).
+
+* ``/ideal-score`` uses the **canonical** scoring (``src.utils.scoring``); the
+  divergent ``calculate_ideal_score`` is retired (FR-016).
+* ``/forecast`` and ``/shade`` return an explicit ``insufficient_data`` result:
+  there is no defined method or data source for them, so they no longer fabricate
+  values (FR-005, FR-012).
+* Occupation and jellyfish estimates are deterministic heuristics labelled with
+  ``nature``/``method``/``validated``; when their base observation is unknown they
+  return ``insufficient_data`` instead of defaulting to an invented value (FR-003).
+
+Observed values are read as-is from the model: this module does not invent
+defaults (no ``or 50``, no ``or "unknown"``).
+"""
 
 from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.deps import get_db
 from src.models import Beach
+from src.schemas import ResponseStatus
 from src.utils.predictions import (
-    predict_occupation_advanced,
+    REASON_NO_METHOD_FORECAST,
+    REASON_NO_METHOD_NATURAL_SHADE,
+    STATUS_OK,
     predict_jellyfish_presence,
-    calculate_shade_availability,
-    generate_forecast
+    predict_occupation_advanced,
 )
+from src.utils.scoring import PRESSURE_LABEL, evaluate_beach
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
+
+# Etiqueta de presentación del score canónico. Son **bandas de presentación**, no
+# umbrales ecológicos ni de capacidad (research.md §D9). Con score desconocido la
+# etiqueta es ``None``: no se inventa una valoración.
+RATING_BANDS = ((80, "EXCELENTE"), (60, "BUENA"), (40, "REGULAR"))
+
+
+def _rating(score: Optional[float]) -> Optional[str]:
+    if score is None:
+        return None
+    for threshold, label in RATING_BANDS:
+        if score >= threshold:
+            return label
+    return "NO RECOMENDADA"
+
+
+async def _find_beach(db: AsyncSession, beach_name: str) -> Optional[Beach]:
+    result = await db.execute(
+        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+def _beach_observations(beach: Beach) -> dict:
+    """Valores observados pasados tal cual: sin valores por defecto inventados."""
+    return {
+        "name": beach.name,
+        "current_occupation": beach.current_occupation,
+        "flag_color": beach.flag_color,
+        "water_quality": beach.water_quality,
+        "jellyfish_present": beach.jellyfish_present,
+        "jellyfish_species": beach.jellyfish_species,
+        "water_temp": beach.water_temp,
+        "wave_height": beach.wave_height,
+        "uv_index": beach.uv_index,
+        "has_lifeguard": beach.has_lifeguard,
+        "has_parking": beach.has_parking,
+        "has_accessibility": beach.has_accessibility,
+        "has_showers": beach.has_showers,
+        "has_shade": beach.has_shade,
+        "has_kiosk": beach.has_kiosk,
+    }
+
+
+def _unavailable(beach: Beach, reason: str) -> dict:
+    """Resultado explícito de indisponibilidad (FR-012) para las rutas sin método."""
+    return {
+        "beach": beach.name,
+        "beach_id": str(beach.id),
+        "status": ResponseStatus.insufficient_data.value,
+        "reason": reason,
+        "nature": "unknown",
+        "validated": False,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def _estimation_block(estimation: dict) -> dict:
+    """Envuelve una estimación con su naturaleza, método y estado (FR-004/FR-005)."""
+    return {
+        "status": estimation["status"],
+        "nature": estimation.get("nature"),
+        "method": estimation.get("method"),
+        "validated": estimation.get("validated", False),
+        "confidence": estimation.get("confidence"),
+        "reason": estimation.get("reason"),
+    }
 
 
 @router.get("/occupation/{beach_name}")
@@ -22,35 +107,27 @@ async def predict_beach_occupation(
     beach_name: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Predict beach occupation for current time period"""
-    result = await db.execute(
-        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
-    )
-    beach = result.scalar_one_or_none()
+    """Estimación determinista de ocupación (método heurístico no validado)."""
+    beach = await _find_beach(db, beach_name)
 
     if not beach:
         return {"error": "Beach not found"}
 
-    beach_dict = {
-        "name": beach.name,
-        "current_occupation": beach.current_occupation,
-        "latitude": beach.latitude,
-        "longitude": beach.longitude,
-        "water_temp": beach.water_temp
-    }
+    prediction = predict_occupation_advanced(_beach_observations(beach))
 
-    prediction = predict_occupation_advanced(beach_dict)
+    if prediction["status"] != STATUS_OK:
+        return {**_unavailable(beach, prediction["reason"]), "method": prediction["method"]}
 
     return {
         "beach": beach.name,
         "beach_id": str(beach.id),
+        **_estimation_block(prediction),
         "current_occupation": beach.current_occupation,
         "predicted_occupation": prediction["predicted"],
-        "confidence": prediction["confidence"],
         "recommendation": prediction["recommendation"],
         "best_time": prediction["best_time"],
         "factors": prediction["factors"],
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
@@ -59,36 +136,28 @@ async def predict_jellyfish_risk(
     beach_name: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Predict jellyfish presence risk"""
-    result = await db.execute(
-        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
-    )
-    beach = result.scalar_one_or_none()
+    """Estimación determinista del riesgo de medusas (método heurístico no validado)."""
+    beach = await _find_beach(db, beach_name)
 
     if not beach:
         return {"error": "Beach not found"}
 
-    beach_dict = {
-        "name": beach.name,
-        "jellyfish_present": beach.jellyfish_present,
-        "jellyfish_species": beach.jellyfish_species,
-        "water_temp": beach.water_temp,
-        "flag_color": beach.flag_color
-    }
+    prediction = predict_jellyfish_presence(_beach_observations(beach))
 
-    prediction = predict_jellyfish_presence(beach_dict)
+    if prediction["status"] != STATUS_OK:
+        return {**_unavailable(beach, prediction["reason"]), "method": prediction["method"]}
 
     return {
         "beach": beach.name,
         "beach_id": str(beach.id),
+        **_estimation_block(prediction),
         "risk_level": prediction["risk_level"],
         "level": prediction["level"],
-        "confidence": prediction["confidence"],
         "prediction": prediction["prediction"],
         "recommendation": prediction["recommendation"],
         "expected_species": prediction["expected_species"],
         "factors": prediction["factors"],
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
@@ -98,34 +167,17 @@ async def get_shade_availability(
     hour: int = Query(None, ge=0, le=23, description="Hour of day (0-23)"),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get natural shade availability for a beach"""
-    result = await db.execute(
-        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
-    )
-    beach = result.scalar_one_or_none()
+    """Sin método ni fuente para la sombra natural: se declara indisponible."""
+    beach = await _find_beach(db, beach_name)
 
     if not beach:
         return {"error": "Beach not found"}
 
     current_hour = hour if hour is not None else datetime.now().hour
 
-    beach_dict = {
-        "latitude": beach.latitude,
-        "longitude": beach.longitude
-    }
-
-    shade_info = calculate_shade_availability(beach_dict, current_hour)
-
     return {
-        "beach": beach.name,
-        "beach_id": str(beach.id),
+        **_unavailable(beach, REASON_NO_METHOD_NATURAL_SHADE),
         "current_hour": current_hour,
-        "has_natural_shade": shade_info["has_natural_shade"],
-        "shade_type": shade_info["shade_type"],
-        "shade_available_now": shade_info["shade_available_now"],
-        "shade_hours": shade_info["shade_hours"],
-        "recommendation": shade_info["recommendation"],
-        "timestamp": datetime.now().isoformat()
     }
 
 
@@ -135,29 +187,16 @@ async def get_beach_forecast(
     days: int = Query(3, ge=1, le=7),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get forecast for next N days"""
-    result = await db.execute(
-        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
-    )
-    beach = result.scalar_one_or_none()
+    """Sin método ni datos de pronóstico: se declara indisponible (FR-005)."""
+    beach = await _find_beach(db, beach_name)
 
     if not beach:
         return {"error": "Beach not found"}
 
-    beach_dict = {
-        "name": beach.name,
-        "water_temp": beach.water_temp,
-        "latitude": beach.latitude,
-        "longitude": beach.longitude
-    }
-
-    forecast = generate_forecast(beach_dict, days)
-
     return {
-        "beach": beach.name,
-        "beach_id": str(beach.id),
-        "forecast": forecast,
-        "generated_at": datetime.now().isoformat()
+        **_unavailable(beach, REASON_NO_METHOD_FORECAST),
+        "days": days,
+        "forecast": None,
     }
 
 
@@ -166,104 +205,53 @@ async def get_ideal_score(
     beach_name: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Calculate 'Playa Ideal' score for a beach"""
-    result = await db.execute(
-        select(Beach).where(Beach.name.ilike(f"%{beach_name}%")).limit(1)
-    )
-    beach = result.scalar_one_or_none()
+    """Score **canónico** de la playa (FR-016) y estimaciones etiquetadas.
+
+    ``status`` usa ``ResponseStatus``: ``ok`` si hay score, ``no_suitable_alternatives``
+    si la playa queda excluida (motivos en ``eligibility_conditions``) e
+    ``insufficient_data`` si faltan datos. ``eligible`` es la señal principal.
+    """
+    beach = await _find_beach(db, beach_name)
 
     if not beach:
         return {"error": "Beach not found"}
 
-    beach_dict = {
-        "name": beach.name or "",
-        "current_occupation": beach.current_occupation or 50,
-        "flag_color": beach.flag_color or "unknown",
-        "water_quality": beach.water_quality or "unknown",
-        "jellyfish_present": bool(beach.jellyfish_present) if beach.jellyfish_present is not None else False,
-        "jellyfish_species": beach.jellyfish_species or "",
-        "has_lifeguard": bool(beach.has_lifeguard) if beach.has_lifeguard is not None else False,
-        "has_parking": bool(beach.has_parking) if beach.has_parking is not None else False,
-        "has_accessibility": bool(beach.has_accessibility) if beach.has_accessibility is not None else False,
-        "has_showers": bool(beach.has_showers) if beach.has_showers is not None else False,
-        "has_shade": bool(beach.has_shade) if beach.has_shade is not None else False,
-        "has_kiosk": bool(beach.has_kiosk) if beach.has_kiosk is not None else False
-    }
+    observations = _beach_observations(beach)
+    evaluation = evaluate_beach(observations)
+    occ_pred = predict_occupation_advanced(observations)
+    jelly_pred = predict_jellyfish_presence(observations)
 
-    score_result = calculate_ideal_score(beach_dict)
-    occ_pred = predict_occupation_advanced(beach_dict)
-    jelly_pred = predict_jellyfish_presence(beach_dict)
+    if evaluation.exclusions:
+        status = ResponseStatus.no_suitable_alternatives.value
+    elif evaluation.score is None:
+        status = ResponseStatus.insufficient_data.value
+    else:
+        status = ResponseStatus.ok.value
 
     return {
         "beach": beach.name,
         "beach_id": str(beach.id),
-        "score": score_result["score"],
-        "rating": score_result["rating"],
-        "factors": score_result["factors"],
+        "status": status,
+        "eligible": not evaluation.exclusions,
+        "eligibility_conditions": [
+            {"type": "safety_risk", "reason": reason, "source": None}
+            for reason in evaluation.exclusions
+        ],
+        "score": evaluation.score,
+        "rating": _rating(evaluation.score),
+        "coverage": evaluation.coverage,
+        "factors": evaluation.factors,
+        "relative_pressure": {"value": evaluation.relative_pressure, "label": PRESSURE_LABEL},
         "prediction": {
-            "occupation": occ_pred["predicted"],
-            "recommendation": occ_pred["recommendation"]
+            **_estimation_block(occ_pred),
+            "occupation": occ_pred.get("predicted"),
+            "recommendation": occ_pred.get("recommendation"),
         },
         "jellyfish": {
-            "risk": jelly_pred["level"],
-            "recommendation": jelly_pred["recommendation"]
+            **_estimation_block(jelly_pred),
+            "risk": jelly_pred.get("level"),
+            "recommendation": jelly_pred.get("recommendation"),
+            "expected_species": jelly_pred.get("expected_species"),
         },
-        "timestamp": datetime.now().isoformat()
-    }
-
-
-def calculate_ideal_score(beach: dict) -> dict:
-    """Calculate the 'Playa Ideal' score"""
-    score = 0
-    factors = {}
-
-    ocupacion = beach.get("current_occupation", 50)
-    score_ocupacion = max(0, (100 - ocupacion) * 0.30)
-    factors["ocupacion"] = {"score": round(score_ocupacion, 1), "max": 30}
-    score += score_ocupacion
-
-    flag = beach.get("flag_color", "unknown")
-    if flag == "green":
-        flag_score = 30
-    elif flag == "yellow":
-        flag_score = 15
-    else:
-        flag_score = 0
-    factors["bandera"] = {"score": flag_score, "max": 30}
-    score += flag_score
-
-    risk_medusas = 0.1
-    if beach.get("jellyfish_present"):
-        risk_medusas = 0.7
-    score_medusas = (1 - risk_medusas) * 20
-    factors["medusas"] = {"score": round(score_medusas, 1), "max": 20}
-    score += score_medusas
-
-    quality = beach.get("water_quality", "unknown")
-    if quality == "excellent":
-        quality_score = 10
-    elif quality == "good":
-        quality_score = 7
-    elif quality == "sufficient":
-        quality_score = 4
-    else:
-        quality_score = 1
-    factors["calidad"] = {"score": quality_score, "max": 10}
-    score += quality_score
-
-    sust_points = 0
-    if beach.get("has_lifeguard"):
-        sust_points += 0.4
-    if beach.get("has_parking"):
-        sust_points += 0.3
-    if beach.get("has_accessibility"):
-        sust_points += 0.3
-    sust_score = sust_points * 10
-    factors["sostenibilidad"] = {"score": round(sust_score, 1), "max": 10}
-    score += sust_score
-
-    return {
-        "score": round(score, 1),
-        "rating": "EXCELENTE" if score >= 80 else "BUENA" if score >= 60 else "REGULAR" if score >= 40 else "NO RECOMENDADA",
-        "factors": factors
+        "timestamp": datetime.now().isoformat(),
     }

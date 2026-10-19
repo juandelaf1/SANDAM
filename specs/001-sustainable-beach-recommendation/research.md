@@ -221,6 +221,44 @@ licencias y privacidad.
 **Rationale**: Principio IX. La escala (20 playas) no lo justifica.
 **Alternativas**: caché/geoespacial avanzado — reevaluar solo con un requisito medido.
 
+### D9 — Sin aleatoriedad y sin scoring divergente en las rutas de predicción (T008)
+
+**Decisión**: `src/api/predictions.py` y `src/utils/predictions.py` quedan así:
+
+1. **Se retira `calculate_ideal_score`** (suma ponderada propia, con `100 − ocupación` como mérito):
+   `/ideal-score` pasa a usar el scoring canónico (`evaluate_beach`). Resultado: `score` es el score
+   canónico (puede ser `null`), `factors` son los factores canónicos y se añaden `status`, `eligible`,
+   `eligibility_conditions`, `coverage` y `relative_pressure`. Efecto en los datos del seed: `Platja de
+   Palma` → **85.0** (con la fórmula divergente daba un valor distinto, sin relación con el canónico).
+2. **Se elimina la aleatoriedad**: `generate_forecast` (fabricaba ocupación, temperatura, tiempo y
+   viento con números aleatorios) y `calculate_shade_availability` (decidía **al azar** si la playa
+   tenía acantilado o vegetación) se **retiran**: quedaban sin consumidores y **no se sustituyen por
+   otra predicción inventada** (FR-005). `/forecast` y `/shade` devuelven
+   `status: "insufficient_data"` con el motivo y `forecast: null`.
+3. **Las estimaciones que se mantienen van etiquetadas**: ocupación (hora/día/meteo) y medusas
+   (presencia observada/viento/marea/temperatura) son métodos heurísticos **no validados**
+   (`nature: "prediction"`, `method: ..._v1`, `validated: false`). Se retira el nivel de `confidence`
+   ("high"/"medium"/"low") por ser una afirmación no sustentada: pasa a `null`. Si falta la
+   observación base (ocupación actual, presencia de medusas) la estimación **no se emite**
+   (`insufficient_data`) en vez de partir de un valor por defecto. `expected_species` solo se informa
+   si consta; nunca se asume una especie.
+
+**Rationale**: FR-005 (nada aleatorio presentado como predicción), FR-003 (lo desconocido no se
+inventa), FR-012 (declarar indisponibilidad), FR-016 (una sola fórmula) y Principio II.
+
+**Cambios incompatibles (FR-010, justificados y documentados aquí)**: en `/ideal-score`, `score` pasa
+a poder ser `null`, cambian las claves de `factors` (eran las de la fórmula retirada) y `rating` es
+`null` cuando no hay score. Los endpoints conservan ruta, parámetros y claves principales.
+
+**Bandas de presentación**: `rating` mantiene las bandas históricas (80/60/40 →
+EXCELENTE/BUENA/REGULAR/NO RECOMENDADA). Son **etiquetas de presentación**, no umbrales ecológicos ni
+de capacidad, y no se emiten si no hay score. Las explicaciones estructuradas de FR-006 son T017.
+
+**Alternativas**: (a) sustituir el código aleatorio por otro modelo predictivo — descartada: no hay
+método validado ni datos, e inventarlo sería simular una precisión inexistente; (b) eliminar los
+endpoints `/forecast` y `/shade` — descartada: rompe el contrato sin necesidad; la indisponibilidad
+explícita es más honesta y conserva la ruta.
+
 ## Resumen de NEEDS CLARIFICATION resueltos
 
 No quedaron `[NEEDS CLARIFICATION]` en la spec; los vacíos se resolvieron como supuestos (spec) o

@@ -1,74 +1,61 @@
-"""Sistema de Predicciones para SANDAM 2026"""
+"""Predicciones deterministas e indisponibilidad explícita (T008).
 
-from datetime import datetime, timedelta
-from typing import Dict, List
-import random
+Reglas (constitución, Principios II y V; FR-003, FR-005, FR-009, FR-012):
+
+* **Sin aleatoriedad.** Este módulo no genera valores al azar. Cuando no existe un
+  método definido, o faltan los datos de partida, se declara la indisponibilidad
+  (``status: "insufficient_data"``) en lugar de fabricar un resultado.
+* **Naturaleza declarada.** Cada resultado declara ``nature`` ("prediction"),
+  ``method`` y ``validated``. Mientras no exista una validación con datos reales,
+  ``validated`` es ``False``: el método es determinista y explícito, pero **no**
+  está contrastado, así que tampoco se emite un nivel de confianza (``confidence``
+  es ``None``). No hay aquí ninguna afirmación de predicción sustentada.
+* **Las entradas desconocidas no se inventan.** Si falta la base de la estimación,
+  no se sustituye por un valor por defecto: la estimación no se emite.
+
+Los valores observados que entran (ocupación actual, temperatura del agua,
+presencia de medusas, especie) se usan tal cual; este módulo no los modifica ni los
+completa. Distinción de capas: observación (lo que viene de la base de datos),
+cálculo determinista (el método de este módulo) y predicción (su resultado
+etiquetado).
+"""
+
+from datetime import datetime
+from typing import Dict, Optional
+
+STATUS_OK = "ok"
+STATUS_INSUFFICIENT_DATA = "insufficient_data"
+NATURE_PREDICTION = "prediction"
+NATURE_UNKNOWN = "unknown"
+
+# Identificadores de método (versionados: si el método cambia, cambia el id).
+METHOD_OCCUPATION = "heuristic_hour_day_weather_v1"
+METHOD_JELLYFISH = "heuristic_wind_tide_temperature_v1"
+
+# Motivos de indisponibilidad cuando no existe un método definido ni datos.
+REASON_NO_METHOD_FORECAST = (
+    "no existe un método definido ni datos de pronóstico para días futuros; "
+    "no se generan valores simulados (FR-005)"
+)
+REASON_NO_METHOD_NATURAL_SHADE = (
+    "no existe fuente para la sombra natural (orientación, acantilados, vegetación) "
+    "en el modelo; no se inventan condiciones físicas (FR-003, FR-005)"
+)
 
 
-def predict_occupation_advanced(beach: Dict, weather_data: Dict = None) -> Dict:
-    """
-    Predicción avanzada de ocupación basada en múltiples factores:
-    - Hora actual
-    - Día de la semana
-    - Condiciones meteorológicas
-    - Tendencia histórica
-    """
-    base_occupation = beach.get("current_occupation", 50)
-    hour = datetime.now().hour
-    day_of_week = datetime.now().weekday()
-    
-    hour_factor = 0
-    if 8 <= hour <= 10:
-        hour_factor = -20
-    elif 10 <= hour <= 13:
-        hour_factor = 10
-    elif 13 <= hour <= 17:
-        hour_factor = 25
-    elif 17 <= hour <= 20:
-        hour_factor = 5
-    elif 20 <= hour <= 22:
-        hour_factor = -15
-    else:
-        hour_factor = -30
-    
-    day_factor = 0
-    if day_of_week >= 5:
-        day_factor = 20
-    elif day_of_week == 4:
-        day_factor = 10
-    
-    weather_factor = 0
-    if weather_data:
-        weather = weather_data.get("weather", {})
-        temp = weather.get("ta", 20)
-        wind = weather.get("vv", 0)
-        
-        if temp > 25 and wind < 5:
-            weather_factor = 15
-        elif temp < 18 or wind > 10:
-            weather_factor = -10
-    
-    predicted = base_occupation + hour_factor + day_factor + weather_factor
-    predicted = max(0, min(100, predicted))
-    
-    confidence = "high" if hour_factor != 0 else "medium"
-    
+def _unavailable(reason: str, method: Optional[str] = None) -> Dict:
+    """Resultado explícito de indisponibilidad (FR-012)."""
     return {
-        "current": base_occupation,
-        "predicted": round(predicted),
-        "confidence": confidence,
-        "factors": {
-            "hour_impact": hour_factor,
-            "day_impact": day_factor,
-            "weather_impact": weather_factor
-        },
-        "recommendation": "IR" if predicted < 65 else "EVITAR" if predicted > 85 else "PRECAUCIÓN",
-        "best_time": get_best_time_to_go(hour)
+        "status": STATUS_INSUFFICIENT_DATA,
+        "reason": reason,
+        "nature": NATURE_UNKNOWN,
+        "method": method,
+        "validated": False,
     }
 
 
 def get_best_time_to_go(current_hour: int) -> str:
-    """Sugiere el mejor momento para ir a la playa"""
+    """Franja horaria sugerida por el método heurístico (no es una observación)."""
     if 6 <= current_hour <= 9:
         return "Ahora mismo - Mañana temprano"
     elif 9 <= current_hour <= 12:
@@ -83,127 +70,143 @@ def get_best_time_to_go(current_hour: int) -> str:
         return "Mañana temprano"
 
 
-def predict_jellyfish_presence(beach: Dict, wind_data: Dict = None, 
-                                tide_data: Dict = None, historical_data: Dict = None) -> Dict:
+def predict_occupation_advanced(beach: Dict, weather_data: Dict = None) -> Dict:
+    """Estimación determinista de ocupación a partir de hora, día y meteo.
+
+    Método heurístico **no validado** (``validated: False``). Si la ocupación
+    actual es desconocida no hay base para estimar y se declara indisponible
+    (FR-003, FR-012): no se parte de un valor inventado.
     """
-    Predicción de presencia de medusas basada en:
-    - Dirección del viento (si viene del sur/este = más medusas)
-    - Mareas
-    - Temperatura del agua
-    - Datos históricos
-    - Presencia en playas cercanas
+    base_occupation = beach.get("current_occupation")
+    if base_occupation is None:
+        return _unavailable(
+            "ocupación actual desconocida: no hay base para la estimación",
+            METHOD_OCCUPATION,
+        )
+
+    hour = datetime.now().hour
+    day_of_week = datetime.now().weekday()
+
+    if 8 <= hour <= 10:
+        hour_factor = -20
+    elif 10 <= hour <= 13:
+        hour_factor = 10
+    elif 13 <= hour <= 17:
+        hour_factor = 25
+    elif 17 <= hour <= 20:
+        hour_factor = 5
+    elif 20 <= hour <= 22:
+        hour_factor = -15
+    else:
+        hour_factor = -30
+
+    if day_of_week >= 5:
+        day_factor = 20
+    elif day_of_week == 4:
+        day_factor = 10
+    else:
+        day_factor = 0
+
+    weather_factor = 0
+    if weather_data:
+        weather = weather_data.get("weather") or {}
+        temp = weather.get("ta")
+        wind = weather.get("vv")
+        if temp is not None and wind is not None:
+            if temp > 25 and wind < 5:
+                weather_factor = 15
+            elif temp < 18 or wind > 10:
+                weather_factor = -10
+
+    predicted = max(0, min(100, base_occupation + hour_factor + day_factor + weather_factor))
+
+    return {
+        "status": STATUS_OK,
+        "current": base_occupation,
+        "predicted": round(predicted),
+        # El método no está validado con datos reales: no se declara confianza.
+        "confidence": None,
+        "nature": NATURE_PREDICTION,
+        "method": METHOD_OCCUPATION,
+        "validated": False,
+        "factors": {
+            "hour_impact": hour_factor,
+            "day_impact": day_factor,
+            "weather_impact": weather_factor,
+        },
+        "recommendation": "IR" if predicted < 65 else "EVITAR" if predicted > 85 else "PRECAUCIÓN",
+        "best_time": get_best_time_to_go(hour),
+    }
+
+
+def predict_jellyfish_presence(
+    beach: Dict,
+    wind_data: Dict = None,
+    tide_data: Dict = None,
+    historical_data: Dict = None,
+) -> Dict:
+    """Estimación determinista del riesgo de medusas (viento, marea, temperatura).
+
+    Método heurístico **no validado**. La presencia observada
+    (``jellyfish_present``) es la base: si es desconocida, no hay base y se declara
+    indisponible (FR-003). La especie solo se informa si está documentada; nunca se
+    asume una especie.
     """
-    base_risk = 0.1
-    
-    if beach.get("jellyfish_present"):
-        base_risk = 0.7
-    
+    present = beach.get("jellyfish_present")
+    if present is None:
+        return _unavailable(
+            "presencia de medusas desconocida: no hay base para estimar el riesgo",
+            METHOD_JELLYFISH,
+        )
+
+    base_risk = 0.7 if present else 0.1
+
     wind_factor = 0
     if wind_data:
-        wind_speed = wind_data.get("vv", 0)
-        wind_dir = wind_data.get("dv", 0)
-        
-        if wind_dir >= 90 and wind_dir <= 180:
-            wind_factor = 0.3
-        elif wind_dir >= 180 and wind_dir <= 270:
-            wind_factor = -0.2
-        
-        if wind_speed > 8:
+        wind_speed = wind_data.get("vv")
+        wind_dir = wind_data.get("dv")
+        if wind_dir is not None:
+            if 90 <= wind_dir <= 180:
+                wind_factor = 0.3
+            elif 180 <= wind_dir <= 270:
+                wind_factor = -0.2
+        if wind_speed is not None and wind_speed > 8:
             wind_factor += 0.1
-    
+
     tide_factor = 0
-    if tide_data:
-        tide = tide_data.get("tide", "unknown")
-        if tide == "baja":
-            tide_factor = 0.15
-    
+    if tide_data and tide_data.get("tide") == "baja":
+        tide_factor = 0.15
+
     temp_factor = 0
-    water_temp = beach.get("water_temp", 20)
-    if water_temp > 26:
-        temp_factor = 0.2
-    elif water_temp < 22:
-        temp_factor = -0.1
-    
-    total_risk = base_risk + wind_factor + tide_factor + temp_factor
-    total_risk = max(0, min(1, total_risk))
-    
+    water_temp = beach.get("water_temp")
+    if water_temp is not None:
+        if water_temp > 26:
+            temp_factor = 0.2
+        elif water_temp < 22:
+            temp_factor = -0.1
+
+    total_risk = max(0.0, min(1.0, base_risk + wind_factor + tide_factor + temp_factor))
     level = "BAJO" if total_risk < 0.25 else "MEDIO" if total_risk < 0.5 else "ALTO"
-    
-    confidence = "high" if base_risk > 0.5 else "medium" if wind_data else "low"
-    
+
     return {
+        "status": STATUS_OK,
         "risk_level": total_risk,
         "level": level,
-        "confidence": confidence,
+        # El método no está validado con datos reales: no se declara confianza.
+        "confidence": None,
+        "nature": NATURE_PREDICTION,
+        "method": METHOD_JELLYFISH,
+        "validated": False,
         "factors": {
             "base_presence": base_risk,
             "wind_impact": wind_factor,
             "tide_impact": tide_factor,
-            "temperature_impact": temp_factor
+            "temperature_impact": temp_factor,
         },
         "prediction": "PROBABLE" if total_risk > 0.4 else "IMPROBABLE",
         "recommendation": "EVITAR" if total_risk > 0.6 else "PRECAUCIÓN" if total_risk > 0.3 else "SEGURO",
-        "expected_species": beach.get("jellyfish_species", "Pelagia noctiluca (común)")
-    }
-
-
-def generate_forecast(beach: Dict, days: int = 3) -> List[Dict]:
-    """Genera predicción para los próximos días"""
-    forecast = []
-    
-    base_temp = beach.get("water_temp", 22)
-    
-    for day in range(days):
-        date = datetime.now() + timedelta(days=day)
-        day_name = date.strftime("%A")
-        
-        temp_variation = random.uniform(-1.5, 1.5)
-        pred_occ = random.randint(30, 85)
-        
-        risk = random.random()
-        jellyfish = "BAJO" if risk < 0.4 else "MEDIO" if risk < 0.7 else "ALTO"
-        
-        forecast.append({
-            "day": day_name,
-            "date": date.strftime("%Y-%m-%d"),
-            "predicted_occupation": pred_occ,
-            "water_temperature": round(base_temp + temp_variation, 1),
-            "jellyfish_risk": jellyfish,
-            "weather": random.choice(["Soleado", "Nubes", "Parcialmente nublado"]),
-            "wind_speed": random.randint(5, 20)
-        })
-    
-    return forecast
-
-
-def calculate_shade_availability(beach: Dict, current_hour: int) -> Dict:
-    """
-    Calcula la disponibilidad de sombra natural basada en:
-    - Orientación de la playa
-    - Hora del día
-    - Presencia de acantilados/vegetación
-    """
-    latitude = beach.get("latitude", 39.5)
-    
-    has_acantilado = random.random() > 0.5
-    has_vegetacion = random.random() > 0.6
-    
-    shade_start = 15
-    shade_end = 19
-    
-    if latitude > 39.7:
-        shade_start = 14
-    elif latitude < 39.4:
-        shade_start = 16
-    
-    current_shade = shade_start <= current_hour <= shade_end if has_acantilado else False
-    
-    return {
-        "has_natural_shade": has_acantilado or has_vegetacion,
-        "shade_type": "acantilado" if has_acantilado else "vegetación" if has_vegetacion else "ninguno",
-        "shade_available_now": current_shade,
-        "shade_hours": f"{shade_start}:00 - {shade_end}:00" if has_acantilado else "No disponible",
-        "recommendation": "Buscar zona con sombra" if not current_shade else "Sombra disponible"
+        # Solo la especie documentada; ``None`` si no consta (no se asume ninguna).
+        "expected_species": beach.get("jellyfish_species"),
     }
 
 
@@ -216,20 +219,15 @@ if __name__ == "__main__":
         "water_temp": 24.5,
         "flag_color": "green",
         "water_quality": "excellent",
-        "jellyfish_present": False
+        "jellyfish_present": False,
     }
-    
-    print("=== Predicción de Ocupación ===")
+
+    print("=== Estimación de ocupación (método no validado) ===")
     occ_pred = predict_occupation_advanced(test_beach)
     print(f"Predicción: {occ_pred['predicted']}% (Recomendación: {occ_pred['recommendation']})")
     print(f"Mejor momento: {occ_pred['best_time']}")
-    
-    print("\n=== Predicción de Medusas ===")
+
+    print("\n=== Estimación de medusas (método no validado) ===")
     jelly_pred = predict_jellyfish_presence(test_beach)
     print(f"Riesgo: {jelly_pred['level']} ({jelly_pred['risk_level']:.2f})")
     print(f"Recomendación: {jelly_pred['recommendation']}")
-    
-    print("\n=== Pronóstico 3 días ===")
-    forecast = generate_forecast(test_beach, 3)
-    for day in forecast:
-        print(f"{day['day']}: {day['predicted_occupation']}% ocupación, {day['water_temperature']}°C")

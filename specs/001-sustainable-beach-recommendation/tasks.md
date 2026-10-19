@@ -137,6 +137,9 @@ independientes.
     copia en el notebook no versionado `notebooks/dashboard_sandam_2026.py` (fuera del repositorio
     versionado). Hasta T008 no puede afirmarse que *todo* el repositorio tenga una sola fórmula; sí
     que el **sistema canónico** (`src/utils/scoring.py` y sus consumidores) tiene una sola.
+    *(Cerrado en T008: la copia de `src/api/predictions.py` se ha retirado. Sigue sin poder afirmarse
+    que todo el repositorio tenga una sola fórmula: queda la copia del notebook **no versionado**,
+    fuera del alcance y no tocada.)*
   - **Auditoría semántica (2026-10-19) → commit correctivo**: la revisión dirigida del scoring
     encontró tres desviaciones, corregidas en un commit **separado** (sin reescribir el historial ni
     tocar el commit de T006). Decisiones, mediciones y alternativas descartadas en `research.md`
@@ -174,8 +177,43 @@ independientes.
     canónico (bandera roja y medusas como exclusiones; calidad `unknown` → `None`; score acotado en
     lugar del valor exacto 100). Fixtures sintéticas, etiquetadas como tales.
     Verificado: `ruff` OK; **106 tests OK** (antes 64).
-- [ ] T008 Retirar la variante divergente `calculate_ideal_score` de `src/api/predictions.py` y eliminar `random` en `src/utils/predictions.py` (o marcar esas rutas como no-fiables y excluirlas de dato real).
-- [ ] T009 [P] Implementar tests que garanticen ausencia de aleatoriedad en rutas de dato en `tests/test_no_random.py`.
+- [x] T008 Retirar la variante divergente `calculate_ideal_score` de `src/api/predictions.py` y eliminar `random` en `src/utils/predictions.py` (o marcar esas rutas como no-fiables y excluirlas de dato real).
+  - **Evidencia (2026-10-19)**: decisiones, consecuencias y alternativas en `research.md` §D9.
+    (1) **`calculate_ideal_score` retirada** de `src/api/predictions.py`; `/ideal-score` usa el scoring
+    canónico (`evaluate_beach`). El endpoint conserva ruta, parámetros y claves principales y añade
+    `status`, `eligible`, `eligibility_conditions`, `coverage` y `relative_pressure` (etiquetado).
+    `score` puede ser `null` y `factors` pasa a ser el conjunto canónico
+    (`water_quality`/`sea_state`/`solar_exposure`): **cambio incompatible justificado** (FR-016, FR-003)
+    y documentado en D9. No se pasa ningún valor por defecto inventado al scoring (fuera `or 50`,
+    `or "unknown"`, `bool(...)`); ahora se incluyen `wave_height` y `uv_index`, que la variante antigua
+    ni usaba.
+    (2) **Aleatoriedad eliminada**: `generate_forecast` y `calculate_shade_availability` **se retiran**
+    (fabricaban ocupación/temperatura/tiempo/viento y decidían al azar si había acantilado o
+    vegetación); sin consumidores en `src/`, **no se sustituyen por otra predicción inventada**
+    (FR-005). `/forecast` y `/shade` devuelven `insufficient_data` con el motivo y `forecast: null`.
+    `grep` de `random` en `src/`: solo una mención en un docstring de `scoring.py`.
+    (3) **Estimaciones etiquetadas y sin afirmaciones no sustentadas**: ocupación y medusas declaran
+    `nature: "prediction"`, `method` y `validated: false`; se retira el `confidence` "high/medium/low"
+    (afirmación no sustentada) → `null`. Si falta la observación base (ocupación actual, presencia de
+    medusas), la estimación **no se emite**: `insufficient_data` (FR-003, FR-012). `expected_species`
+    solo si consta (nunca se asume una especie).
+    (4) **`get_best_time_to_go`** se conserva (tabla determinista, sin aleatoriedad).
+    Verificado: `ruff` OK; **122 tests OK** (16 nuevos). Pendiente de validar con datos reales: la
+    exactitud de los dos métodos heurísticos (Q28).
+- [x] T009 [P] Implementar tests que garanticen ausencia de aleatoriedad en rutas de dato en `tests/test_no_random.py`.
+  - **Evidencia (2026-10-19)**: `tests/test_no_random.py` (16 casos). (1) **Barrido de fuentes**:
+    ningún `.py` de `src/` importa `random` ni invoca `random.*` (regex sobre el código, no sobre los
+    docstrings). (2) **Determinismo**: 20 repeticiones de cada estimación dan el mismo resultado.
+    (3) **Sin base observada no hay estimación** (unidad): ocupación actual o presencia de medusas
+    desconocidas → `insufficient_data`, sin clave de resultado; la especie no documentada es `null`.
+    (4) **Ninguna confianza no validada**: `nature`/`validated`/`confidence` presentes y honestos.
+    (5) **Rutas sin método**: `/forecast` y `/shade` responden `insufficient_data` y **no** contienen
+    ninguno de los campos fabricados antes (`predicted_occupation`, `weather`, `has_natural_shade`,
+    …); respuesta estable entre llamadas. (6) **`/ideal-score` canónico**: score 85.0 con los datos de
+    `sample_beach`, `factors` sin las claves divergentes (`ocupacion`, `bandera`, `medusas`, `calidad`,
+    `sostenibilidad`); playa excluida → `no_suitable_alternatives`, `score`/`rating` `null` y motivo en
+    `eligibility_conditions`; condiciones ausentes → `insufficient_data` y `coverage < 1.0`.
+    Verificado: `ruff` OK; **122 tests OK**.
 
 **Checkpoint**: scoring único, migraciones operativas, sin aleatoriedad presentada como real.
 

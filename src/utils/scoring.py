@@ -11,8 +11,9 @@ Propiedades que garantiza este módulo
 
 1. **Una sola implementación** (FR-016, Principio IV). Toda puntuación de playa
    **del sistema canónico** se calcula aquí. Nota de alcance: la variante
-   divergente `calculate_ideal_score` de `src/api/predictions.py` se retira en
-   T008.
+   divergente `calculate_ideal_score` se retiró de `src/api/predictions.py` en
+   T008; queda una copia en el notebook **no versionado**
+   `notebooks/dashboard_sandam_2026.py`, fuera del repositorio y del alcance.
 
 2. **Condiciones no compensables** (FR-002, Principios I y III). Las condiciones de
    seguridad **no se ponderan**: se evalúan *antes* del score y lo anulan. Ninguna

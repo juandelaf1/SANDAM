@@ -172,6 +172,24 @@ técnica arbitraria.
 - **Decisión temporal segura**: no ponderar la ocupación; no presentar los indicadores derivados como
   mediciones verificadas y etiquetar como estimación lo que proceda.
 
+#### Q28 — Validación de los métodos heurísticos de estimación
+- **Qué necesitamos saber**: si los dos métodos heurísticos que quedan tras T008 — ocupación
+  (`heuristic_hour_day_weather_v1`) y medusas (`heuristic_wind_tide_temperature_v1`) — son aceptables
+  para uso público, o hay que sustituirlos o retirarlos.
+- **Por qué afecta**: son **deterministas** y están etiquetados (`nature: "prediction"`,
+  `method`, `validated: false`, `confidence: null`), pero **no están contrastados**: sus constantes
+  (factores horarios/día, prior base de medusas 0.1/0.7, umbrales de viento y temperatura) no tienen
+  fuente empírica en el repositorio. FR-005 admite etiquetar como predicción un método definido, pero
+  eso no acredita que el resultado sea correcto.
+- **Evidencia que la resuelve**: serie de observaciones reales por playa y franja horaria frente a las
+  estimaciones (error, sesgo, calibración) más una ficha de método con fuente, supuestos y límites.
+- **Bloquea**: presentar estas estimaciones con confianza o usarlas para decidir en producción.
+  **No** bloquea el MVP: se exponen etiquetadas como predicción **no validada**, sin nivel de
+  confianza.
+- **Cuándo**: Fase B/C, junto con la integración de fuentes reales.
+- **Decisión temporal segura**: mantenerlas etiquetadas y sin `confidence`; **no** sustituir el código
+  aleatorio retirado por otra predicción inventada; no presentarlas nunca como observaciones.
+
 ### Fuentes y permisos
 
 #### Q13 — Condiciones de uso de las fuentes públicas de ocupación
