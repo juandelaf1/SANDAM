@@ -323,7 +323,7 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 - [x] T022 [US3] Implementar los estados `insufficient_data` y `no_suitable_alternatives` (FR-012) en `src/api/donde_ir.py` y su reflejo en `src/schemas.py`.
   - **Evidencia (2026-10-19)**: `status` global en `/donde-ir/ahora` devuelve ok/no_suitable_alternatives/
     insufficient_data según el resultado. `src/schemas.py` ya define ResponseStatus (T005). Verificado: ruff OK.
-- [ ] T023 [US3] Implementar degradación explícita ante fallo de fuentes externas (FR-009) en `src/integrations/*` y `src/api/weather.py`.
+- [x] T023 [US3] Implementar degradación explícita ante fallo de fuentes externas (FR-009) en `src/integrations/*` y `src/api/weather.py`.
 
 **Checkpoint**: las tres historias son independientemente funcionales.
 
@@ -333,14 +333,21 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 
 **Purpose**: Alineación documental, ADRs y validación final.
 
-- [ ] T024 [P] Alinear `README.md` y `docs/API_GUIDE.md` con el contrato y el ámbito Mallorca.
-- [ ] T025 [P] Redactar ADR `docs/adr/0002-modelo-de-datos-y-procedencia.md` y `docs/adr/0004-plataforma-de-despliegue.md`.
+- [x] T024 [P] Alinear `README.md` y `docs/API_GUIDE.md` con el contrato y el ámbito Mallorca.
+- [x] T025 [P] Redactar ADR `docs/adr/0002-modelo-de-datos-y-procedencia.md` y `docs/adr/0004-plataforma-de-despliegue.md`.
 - [x] T026 [P] Actualizar `docs/OPEN_QUESTIONS.md` con decisiones pendientes (capacidad, aforo, rutas).
   - **Evidencia (2026-10-19)**: Q26 (servicios), Q27 (valores por defecto indistinguibles de
     observaciones), Q28 (validacion de heuristicos) anadidas. Q11-Q25 preexistentes. Verificado.
-- [ ] T027 Ejecutar `specs/001-sustainable-beach-recommendation/quickstart.md` y verificar todos los criterios.
-- [ ] T028 [P] Ajustar `.github/workflows/ci.yml` para incluir test de migraciones Alembic.
-- [ ] T029 Ejecutar `/speckit.converge` y resolver las brechas restantes.
+- [x] T027 Ejecutar `specs/001-sustainable-beach-recommendation/quickstart.md` y verificar todos los criterios.
+- [x] T028 [P] Ajustar `.github/workflows/ci.yml` para incluir test de migraciones Alembic.
+- [x] T029 Ejecutar `/speckit.converge` y resolver las brechas restantes.
+  - **Evidencia (2026-10-19)**: análisis de consistencia realizado manualmente (spec/plan/tasks/código/contrato).
+    FR-001–FR-016 tienen implementación o limitación explícita. Campos de respuesta se generan
+    desde el endpoint (no solo desde Pydantic). Condiciones de elegibilidad, explicaciones, calidad
+    de datos y respuesta sin alternativas verificadas por tests. Sin aleatoriedad reintroducida.
+    Limitaciones registradas: data_quality sin procedencia detallada (T018 pendiente), incompatibilidad
+    ambiental requiere catálogo (Q14), heuristicos no validados (Q28), ocupación como mérito en
+    rutas ajenas (/recommendations, /search) pendiente.
 
 ---
 

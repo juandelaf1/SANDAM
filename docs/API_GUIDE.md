@@ -494,6 +494,39 @@ GET /health/ready
 
 ---
 
+## 9. DÓNDE IR AHORA (Recomendación)
+
+### 9.1 Recomendar playas elegibles
+
+```
+GET /donde-ir/ahora?lat={lat}&lon={lon}&incluir_marginales={bool}
+```
+
+**Parámetros:**
+- `lat` (required): latitud del usuario (-90..90)
+- `lon` (required): longitud del usuario (-180..180)
+- `incluir_marginales` (optional, default false): incluir playas marginales
+
+**Respuesta (200):** ver `contracts/donde-ir.openapi.yaml` (v0.2.0). Campos clave:
+- `recomendaciones`: lista de playas elegibles ordenadas por `score_final`.
+- `eligible` (bool): resultado de la etapa de elegibilidad (FR-001).
+- `eligibility_conditions`: condiciones de exclusión detectadas (vacío si elegible).
+- `pressure_relative` (0..1): indicador de presión **relativa**, no umbral oficial (FR-014). La baja ocupación **no** es un mérito (FR-007).
+- `travel_time_is_estimate` (bool): true mientras el tiempo sea estimación (FR-013).
+- `explanation`: `{reason, factors}` motivo legible (FR-006).
+- `status`: `ok` / `no_suitable_alternatives` / `insufficient_data` (FR-012).
+
+**Datos desconocidos:** se representan como `null` o `unknown`, nunca como condición favorable (FR-003).
+
+**Diferencia observación vs estimación:** observación = valor de fuente; estimación/predicción = resultado de un método (etiquetado con `nature`, `method`, `validated`).
+
+### 9.2 Limitaciones actuales
+
+- El tiempo de viaje es una estimación (Haversine × factor), no un cálculo de ruta real.
+- La ocupación, el tráfico y el confort térmico en tiempo real **no** están conectados ni verificados.
+- La incompatibilidad ambiental requiere un catálogo validado (pendiente).
+- `data_quality` se etiqueta con naturaleza (observation/unknown) pero sin procedencia detallada.
+
 ## 📝 Notas
 
 1. Todos los timestamps están en formato ISO 8601 (UTC)
