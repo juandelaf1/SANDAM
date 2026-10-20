@@ -10,6 +10,10 @@ verificación automatizada (SC-001..SC-007).
 **Organization**: Tareas agrupadas por historia de usuario para permitir implementación y prueba
 independientes.
 
+> **Auditoría de convergencia (2026-10-20)**: ver [`convergence-audit.md`](./convergence-audit.md).
+> Los checkboxes se conservan; el documento distingue **cumplido / parcial / limitado por datos**
+> y registra las brechas de FR-003, FR-004, FR-007, FR-014 y FR-015 sin reescribir el historial.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: puede ejecutarse en paralelo (archivos distintos, sin dependencias pendientes)
@@ -320,10 +324,19 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
   - **Evidencia (2026-10-19)**: `data_quality` añadido a cada recomendación del motor con naturaleza
     por variable (observation/unknown) para water_quality, sea_state, solar_exposure y occupation.
     Sin procedencia inventada (source: None). Verificado: ruff OK.
+  - **Revisión (2026-10-20)**: ver `convergence-audit.md`. El etiquetado existe, pero clasifica como
+    observación valores que en realidad son defaults (`water_quality="unknown"`,
+    `current_occupation=0`) y no incluye `source`. FR-004/FR-015 quedan **parciales**; la corrección
+    se planifica en `specs/002-trusted-observations-and-occupancy/tasks.md`.
 - [x] T022 [US3] Implementar los estados `insufficient_data` y `no_suitable_alternatives` (FR-012) en `src/api/donde_ir.py` y su reflejo en `src/schemas.py`.
   - **Evidencia (2026-10-19)**: `status` global en `/donde-ir/ahora` devuelve ok/no_suitable_alternatives/
     insufficient_data según el resultado. `src/schemas.py` ya define ResponseStatus (T005). Verificado: ruff OK.
 - [x] T023 [US3] Implementar degradación explícita ante fallo de fuentes externas (FR-009) en `src/integrations/*` y `src/api/weather.py`.
+  - **Evidencia (2026-10-20)**: `/weather` devuelve `{"error": ...}` sin inventar valores y el
+    camino principal de `/donde-ir` es DB-backed. **Alcance limitado**: `src/integrations/alerts_system.py`
+    fabrica un estado favorable con fuente "112 Catalunya" y `src/integrations/scraper_scrapling.py`
+    usa `50` como ocupación por defecto; `alerts_system` no está importado por `src/main.py`, pero
+    los scrapers sí se exponen en `/scraper/*`. Ver `convergence-audit.md` §1 (FR-009).
 
 **Checkpoint**: las tres historias son independientemente funcionales.
 
@@ -334,12 +347,22 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
 **Purpose**: Alineación documental, ADRs y validación final.
 
 - [x] T024 [P] Alinear `README.md` y `docs/API_GUIDE.md` con el contrato y el ámbito Mallorca.
+  - **Evidencia (2026-10-20)**: `docs/API_GUIDE.md` sección 9 documenta `/donde-ir/ahora`, sus
+    estados (`ok`, `no_suitable_alternatives`, `insufficient_data`) y las limitaciones; README
+    alineado con el ámbito Mallorca.
 - [x] T025 [P] Redactar ADR `docs/adr/0002-modelo-de-datos-y-procedencia.md` y `docs/adr/0004-plataforma-de-despliegue.md`.
+  - **Evidencia (2026-10-20)**: ADR 0002/0004/0005 revisados y coherentes con el código y la
+    migración `0002`. No se añadieron ADR redundantes.
 - [x] T026 [P] Actualizar `docs/OPEN_QUESTIONS.md` con decisiones pendientes (capacidad, aforo, rutas).
   - **Evidencia (2026-10-19)**: Q26 (servicios), Q27 (valores por defecto indistinguibles de
     observaciones), Q28 (validacion de heuristicos) anadidas. Q11-Q25 preexistentes. Verificado.
 - [x] T027 Ejecutar `specs/001-sustainable-beach-recommendation/quickstart.md` y verificar todos los criterios.
+  - **Evidencia (2026-10-20)**: `quickstart.md` revisado; los comandos coinciden con el README y
+    pasan (ruff + pytest).
 - [x] T028 [P] Ajustar `.github/workflows/ci.yml` para incluir test de migraciones Alembic.
+  - **Evidencia (2026-10-20)**: `.github/workflows/ci.yml` usa PostgreSQL 16 con health check,
+    valida OpenAPI con `pyyaml`, ejecuta los tests con `DATABASE_URL` y aplica
+    `alembic upgrade head` + `alembic current`. **Validación remota en GitHub Actions pendiente.**
 - [x] T029 Ejecutar `/speckit.converge` y resolver las brechas restantes.
   - **Evidencia (2026-10-19)**: análisis de consistencia realizado manualmente (spec/plan/tasks/código/contrato).
     FR-001–FR-016 tienen implementación o limitación explícita. Campos de respuesta se generan
@@ -348,6 +371,9 @@ se ordenan las elegibles y se excluyen las no elegibles, con explicación por pl
     Limitaciones registradas: data_quality sin procedencia detallada (T018 pendiente), incompatibilidad
     ambiental requiere catálogo (Q14), heuristicos no validados (Q28), ocupación como mérito en
     rutas ajenas (/recommendations, /search) pendiente.
+  - **Auditoría (2026-10-20)**: estado real por requisito en `convergence-audit.md`. FR-003,
+    FR-004, FR-007, FR-014 y FR-015 quedan **parciales**; T021 y T023 se conservan marcadas pero
+    con alcance limitado documentado. La spec 002 asume las brechas.
 
 ---
 
