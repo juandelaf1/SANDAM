@@ -375,6 +375,13 @@ parte correspondiente.
   oficial (FR-014).
 - **Evidencia que la resuelve**: ficha de cada fuente con definición de denominador, unidad y
   método; confirmación por el organismo.
+- **Evidencia verificada (2026-10-20)**: `current_occupation` es `INTEGER` anulable con default
+  Python `0` (`src/models.py:71`), Pydantic 0–100 (`src/schemas.py:15`), filtros 0–100
+  (`src/api/beaches.py:32-33`) y `relative_pressure` divide por 100 (`src/utils/scoring.py:169-179`).
+  El seed contiene 20 valores entre 20 y 92 (media 54,5) y `max_capacity` entre 1.500 y 20.000,
+  pero no son observaciones. `docs/API_GUIDE.md` lo llama `%`; `docs/CONTEXTO_MAESTRO.md` pide
+  m². No hay unidad, denominador ni superficie documentados. La BD local no estaba accesible en
+  esta revisión. **No se adopta una unidad canónica.**
 - **Bloquea**: calcular presión relativa numérica y comparar playas entre municipios.
 - **Cuándo**: antes de la Fase 4 (consumidores) de la spec 002.
 - **Decisión temporal segura**: no emitir `pressure_relative` cuando la base no esté definida;
@@ -388,6 +395,10 @@ parte correspondiente.
   histórico no se puede entrenar/evaluar ni auditar. Una web pública no es una API autorizada.
 - **Evidencia que la resuelve**: respuesta escrita del organismo con condiciones, o un contrato
   de piloto; muestra de datos con marca temporal.
+- **Evidencia verificada (2026-10-20)**: no hay evidencia nueva de API o histórico autorizado.
+  El código versionado contiene scrapers con `bypass=True` (`src/integrations/scrapling_v2.py:27-29`)
+  y endpoints `/api/v1/scraper/*` que intentan extraer ocupación de UIB/Platges sin permiso
+  verificado; **no se ejecutaron** y no constituyen autorización. Las fuentes siguen bloqueadas.
 - **Bloquea**: la validación de heurísticos (Q28) y la integración de ocupación real.
 - **Cuándo**: Fase 1/3 de la spec 002, antes de escribir adaptadores.
 - **Decisión temporal segura**: no raspar; no usar la app como fuente; mantener la ocupación
@@ -401,6 +412,12 @@ parte correspondiente.
   semanal no es actual el día de la consulta.
 - **Evidencia que la resuelve**: decisión de producto + ficha de cada fuente con su latencia
   real medida y su frecuencia oficial.
+- **Evidencia verificada (2026-10-20)**: Calvià publica 4 zonas con actualización oficial cada
+  15 min (una noticia local dice 10; discrepancia anotada); Consell y Gemelo Digital no publican
+  frecuencia; AEMET/SOCIB/Copernicus dependen del producto; la calidad del agua es estacional; el
+  clima marítimo de la CAIB es mensual. El caché de 30 min de `src/api/weather.py` **no** es una
+  regla de validez. `valid_until = NULL` significa desconocido, no infinito. No se fija un plazo
+  universal.
 - **Bloquea**: la etiqueta `current`/`stale` y el texto de la API.
 - **Cuándo**: Fase 0/2 de la spec 002.
 - **Decisión temporal segura**: no usar “tiempo real”; usar “última observación disponible” con
@@ -415,6 +432,10 @@ parte correspondiente.
   base.
 - **Evidencia que la resuelve**: decisión de producto documentada + datos de referencia
   suficientes (Q30).
+- **Evidencia verificada (2026-10-20)**: ambos heurísticos dependen de
+  `current_occupation`/`jellyfish_present`; con los defaults actuales pueden ejecutarse sobre un
+  valor no observado. No hay datos de referencia, métricas ni umbrales aprobados. Los tests
+  verdes solo cubren contrato, no exactitud.
 - **Bloquea**: el cierre de Q28 y el uso de heurísticos como factor.
 - **Cuándo**: antes de ejecutar la validación (Fase 5 de la spec 002).
 - **Decisión temporal segura**: mantener `validated=false`, `confidence=null` y no usar como
@@ -427,6 +448,9 @@ parte correspondiente.
 - **Por qué afecta**: FR-015 exige licencia verificada; una descarga pública no concede
   reutilización. `carac_platges` sería útil para capacidad física, pero no se puede usar hoy.
 - **Evidencia que la resuelve**: metadatos corregidos o autorización escrita del GOIB.
+- **Evidencia verificada (2026-10-20)**: los metadatos de `carac_platges` y
+  `platges-adherides-programa-antitabaquisme` siguen con `isopen: false` y licencia vacía;
+  `clima_maritim_platges` sí tiene CC-BY verificada. No se cargan los dos primeros.
 - **Bloquea**: usar esos datasets en producción; no bloquea el resto de la spec 002.
 - **Cuándo**: antes de la Fase 8 (adaptadores) si se decide usarlos.
 - **Decisión temporal segura**: no cargarlos; `clima_maritim_platges` sí tiene CC-BY verificada.
@@ -438,6 +462,11 @@ parte correspondiente.
   perpetúa la confusión que la spec 002 quiere eliminar.
 - **Evidencia que la resuelve**: inventario de clientes conocidos + pruebas de contrato;
   decisión de producto sobre la ventana de transición.
+- **Evidencia verificada (2026-10-20)**: `DataStatus` solo tiene `live/estimated/unavailable`;
+  `BeachCreate` usa `live` por defecto (`src/schemas.py:44`) y el seed lo fuerza (`seed_data.py:536`).
+  La BD admite `NULL`, pero `BeachResponse` usa `current_occupation: int` y booleanos no
+  opcionales; un `NULL` masivo rompe la serialización. Los tests actuales asumen `live`. Por
+  tanto, la transición debe ser valor legado + estado explícito; el `NULL` se decide después.
 - **Bloquea**: la migración de relajación de defaults (Fase 6 de la spec 002).
 - **Cuándo**: tras la Fase 4, antes de la migración final.
 - **Decisión temporal segura**: campos aditivos de estado; documentar que el valor legado no
