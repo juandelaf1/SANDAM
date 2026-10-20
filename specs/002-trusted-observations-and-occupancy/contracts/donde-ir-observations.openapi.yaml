@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: SANDAM — adiciones de observaciones y presión (fragmento)
+  version: 0.1.0
+  description: |
+    FRAGMENTO de contrato, no un contrato completo ni implementado. Define los campos
+    ADITIVOS que la spec 002 propone para `/donde-ir`, `/recommendations`, `/search` y
+    `/external`. Se mantienen los campos existentes para compatibilidad.
+
+    Reglas:
+    - `unknown` nunca viaja como 0/false en los campos nuevos.
+    - `pressure_relative` es null cuando la ocupación es desconocida.
+    - `current_occupation` se conserva por compatibilidad; su valor NO debe interpretarse
+      como dato observado salvo que `occupancy_status` sea `observed` o `estimated`.
+x-contract-status: proposal-not-implemented
+paths: {}
+components:
+  schemas:
+    DataNature:
+      type: string
+      enum: [observation, user_report, estimate, prediction, historical, synthetic, unknown]
+    DataVigency:
+      type: string
+      enum: [current, stale, unknown, synthetic]
+    DataQualityEntry:
+      type: object
+      additionalProperties: false
+      required: [nature, status]
+      properties:
+        nature:
+          $ref: "#/components/schemas/DataNature"
+        validation_status:
+          type: string
+          enum: [unvalidated, validated, rejected]
+        status:
+          $ref: "#/components/schemas/DataVigency"
+        source:
+          type: [string, "null"]
+          description: Identificador legible de la fuente (no un secreto).
+        observed_at:
+          type: [string, "null"]
+          format: date-time
+        valid_until:
+          type: [string, "null"]
+          format: date-time
+        spatial_resolution_m:
+          type: [number, "null"]
+          minimum: 0
+        observation_id:
+          type: [string, "null"]
+          format: uuid
+    DataQuality:
+      type: object
+      description: Calidad por variable. Un default nunca se etiqueta como observation.
+      additionalProperties:
+        $ref: "#/components/schemas/DataQualityEntry"
+      properties:
+        water_quality:
+          $ref: "#/components/schemas/DataQualityEntry"
+        sea_state:
+          $ref: "#/components/schemas/DataQualityEntry"
+        solar_exposure:
+          $ref: "#/components/schemas/DataQualityEntry"
+        occupation:
+          $ref: "#/components/schemas/DataQualityEntry"
+        flag_color:
+          $ref: "#/components/schemas/DataQualityEntry"
+        jellyfish:
+          $ref: "#/components/schemas/DataQualityEntry"
+        sargasso:
+          $ref: "#/components/schemas/DataQualityEntry"
+        services:
+          $ref: "#/components/schemas/DataQualityEntry"
+    PressureIndicator:
+      type: object
+      additionalProperties: false
+      required: [status, label]
+      properties:
+        occupancy_value:
+          type: [number, "null"]
+        occupancy_unit:
+          type: [string, "null"]
+          enum: ["%", count, null]
+        status:
+          type: string
+          enum: [observed, estimated, stale, unknown, synthetic]
+        relative_pressure:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 1
+          description: null si status es unknown o stale.
+        reference:
+          type: [string, "null"]
+          description: Capacidad o referencia usada; NULL si no hay metodología.
+        reference_is_validated:
+          type: boolean
+          default: false
+        inputs:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: IDs de las observaciones usadas.
+        label:
+          type: string
+          description: Texto que declara que es presión relativa, no capacidad oficial.
+    Prediction:
+      type: object
+      additionalProperties: false
+      required: [method, horizon, validated, confidence]
+      properties:
+        method:
+          type: string
+        horizon:
+          type: string
+          examples: ["+3h", "+1d", "+7d"]
+        validated:
+          type: boolean
+        confidence:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 1
+          description: null mientras validated sea false.
+    RecommendationItemAdditions:
+      type: object
+      description: Campos aditivos de cada alternativa recomendada.
+      properties:
+        occupancy_status:
+          type: string
+          enum: [observed, estimated, stale, unknown, synthetic]
+        occupancy_observed_at:
+          type: [string, "null"]
+          format: date-time
+        jellyfish_status:
+          type: string
+          enum: [present, absent, unknown]
+        sargasso_status:
+          type: string
+          enum: [present, absent, unknown]
+        services_status:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [present, absent, unknown]
+        pressure:
+          $ref: "#/components/schemas/PressureIndicator"
+        data_quality:
+          $ref: "#/components/schemas/DataQuality"
+    RecommendedBeachAdditions:
+      type: object
+      description: Campos aditivos de cada playa mostrada u omitida.
+      properties:
+        occupancy_status:
+          type: string
+          enum: [observed, estimated, stale, unknown, synthetic]
+        jellyfish_status:
+          type: string
+          enum: [present, absent, unknown]
+        data_quality:
+          $ref: "#/components/schemas/DataQuality"
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Motivos por los que un valor no debe interpretarse como hecho.
+    SourceStatus:
+      type: object
+      additionalProperties: false
+      required: [id, name, kind, status, license, terms_reviewed_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [official, research, community, commercial, internal]
+        status:
+          type: string
+          enum: [active, paused, blocked, retired]
+        license:
+          type: [string, "null"]
+        terms_reviewed_at:
+          type: [string, "null"]
+          format: date
+        last_ingestion_at:
+          type: [string, "null"]
+          format: date-time

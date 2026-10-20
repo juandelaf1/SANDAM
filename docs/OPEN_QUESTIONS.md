@@ -4,7 +4,7 @@ Preguntas que **no** pueden resolverse de forma responsable con la información 
 Cada una indica por qué bloquea algo, quién debe resolverla y qué evidencia se necesita.
 Cuando se resuelva, se traslada a un ADR o a una especificación.
 
-**Última revisión**: 2026-10-19
+**Última revisión**: 2026-10-20
 
 ---
 
@@ -358,3 +358,87 @@ técnica arbitraria.
 - **Bloquea**: la Fase F. **No** bloquea el MVP.
 - **Cuándo**: Fase B/F.
 - **Decisión temporal segura**: no declarar elegido ningún ámbito hasta verificar datos y permisos.
+
+### Observaciones, procedencia y presión (spec 002)
+
+Preguntas abiertas al definir `specs/002-trusted-observations-and-occupancy/`. No bloquean la
+definición (la spec queda cerrada con ellas registradas); bloquean la implementación de la
+parte correspondiente.
+
+#### Q29 — Semántica y unidad de la ocupación
+- **Qué necesitamos saber**: si la ocupación se expresa como **porcentaje de capacidad** o como
+  **conteo de personas**, y si la capacidad de referencia es la de la arena, la del dominio
+  público o la total. Calvià publica aforo de la zona de arena y espacio por persona; el
+  Consell y el Gemelo Digital publican “ocupación” sin detallar la base.
+- **Por qué afecta**: dos cifras del mismo número con bases distintas no son comparables; una
+  `pressure_relative` calculada sobre una base no validada se confundiría con una capacidad
+  oficial (FR-014).
+- **Evidencia que la resuelve**: ficha de cada fuente con definición de denominador, unidad y
+  método; confirmación por el organismo.
+- **Bloquea**: calcular presión relativa numérica y comparar playas entre municipios.
+- **Cuándo**: antes de la Fase 4 (consumidores) de la spec 002.
+- **Decisión temporal segura**: no emitir `pressure_relative` cuando la base no esté definida;
+  mostrar la ocupación como `unknown` o como valor con su unidad, sin compararla.
+
+#### Q30 — Acceso, permiso y histórico de las fuentes de ocupación
+- **Qué necesitamos saber**: si Calvià, el Consell de Mallorca y el Gemelo Digital ofrecen API,
+  exportación histórica y licencia de reutilización; con qué frecuencia, latencia y cobertura;
+  y si el acceso requiere convenio.
+- **Por qué afecta**: son las únicas referencias creíbles para validar la ocupación; sin
+  histórico no se puede entrenar/evaluar ni auditar. Una web pública no es una API autorizada.
+- **Evidencia que la resuelve**: respuesta escrita del organismo con condiciones, o un contrato
+  de piloto; muestra de datos con marca temporal.
+- **Bloquea**: la validación de heurísticos (Q28) y la integración de ocupación real.
+- **Cuándo**: Fase 1/3 de la spec 002, antes de escribir adaptadores.
+- **Decisión temporal segura**: no raspar; no usar la app como fuente; mantener la ocupación
+  como desconocida o sintética hasta el permiso.
+
+#### Q31 — Umbral de “tiempo real” y caducidad por variable
+- **Qué necesitamos saber**: qué latencia máxima permite llamar “tiempo real” a un dato y qué
+  `valid_until` corresponde a cada variable (ocupación, bandera, calidad del agua, oleaje,
+  UV, medusas).
+- **Por qué afecta**: FR-020 prohíbe “tiempo real” sin umbral verificable; una calidad de agua
+  semanal no es actual el día de la consulta.
+- **Evidencia que la resuelve**: decisión de producto + ficha de cada fuente con su latencia
+  real medida y su frecuencia oficial.
+- **Bloquea**: la etiqueta `current`/`stale` y el texto de la API.
+- **Cuándo**: Fase 0/2 de la spec 002.
+- **Decisión temporal segura**: no usar “tiempo real”; usar “última observación disponible” con
+  `observed_at` y `stale` cuando corresponda.
+
+#### Q32 — Criterio cuantitativo de aceptación de los heurísticos
+- **Qué necesitamos saber**: qué mejora mínima frente a la línea base (persistencia para
+  ocupación; tasa base para medusas) se exige para mantener un heurístico, y con qué tamaño de
+  muestra y cobertura.
+- **Por qué afecta**: sin un umbral acordado **antes** de ver resultados, la validación se
+  convierte en una elección post hoc; con un umbral inventado, se declara una exactitud sin
+  base.
+- **Evidencia que la resuelve**: decisión de producto documentada + datos de referencia
+  suficientes (Q30).
+- **Bloquea**: el cierre de Q28 y el uso de heurísticos como factor.
+- **Cuándo**: antes de ejecutar la validación (Fase 5 de la spec 002).
+- **Decisión temporal segura**: mantener `validated=false`, `confidence=null` y no usar como
+  factor; no fijar cifras arbitrarias.
+
+#### Q33 — Licencia de los datasets de la CAIB con licencia vacía
+- **Qué necesitamos saber**: bajo qué condiciones se pueden reutilizar `carac_platges`
+  (características físicas de playas) y `platges-adherides-programa-antitabaquisme`, que se
+  publican como descarga pública pero con `license_id` vacío y `isopen: false`.
+- **Por qué afecta**: FR-015 exige licencia verificada; una descarga pública no concede
+  reutilización. `carac_platges` sería útil para capacidad física, pero no se puede usar hoy.
+- **Evidencia que la resuelve**: metadatos corregidos o autorización escrita del GOIB.
+- **Bloquea**: usar esos datasets en producción; no bloquea el resto de la spec 002.
+- **Cuándo**: antes de la Fase 8 (adaptadores) si se decide usarlos.
+- **Decisión temporal segura**: no cargarlos; `clima_maritim_platges` sí tiene CC-BY verificada.
+
+#### Q34 — Compatibilidad de los campos legados (`0`/`false` vs `null`)
+- **Qué necesitamos saber**: si los clientes actuales toleran `null` en `current_occupation` y
+  `has_*`, o si hay que mantener `0`/`false` con un estado explícito durante una versión.
+- **Por qué afecta**: cambiar a `null` sin transición rompe contratos; mantener `0` sin estado
+  perpetúa la confusión que la spec 002 quiere eliminar.
+- **Evidencia que la resuelve**: inventario de clientes conocidos + pruebas de contrato;
+  decisión de producto sobre la ventana de transición.
+- **Bloquea**: la migración de relajación de defaults (Fase 6 de la spec 002).
+- **Cuándo**: tras la Fase 4, antes de la migración final.
+- **Decisión temporal segura**: campos aditivos de estado; documentar que el valor legado no
+  debe interpretarse sin el estado; no borrar columnas.

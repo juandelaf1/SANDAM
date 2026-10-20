@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sandam.example/schemas/observation.schema.json",
+  "title": "SANDAM Observation",
+  "description": "Contrato conceptual de una observación. Estado: propuesta; no implementado. Una observación describe un valor con su procedencia, método, tiempos, vigencia y validación. La ausencia de observación se representa fuera de este objeto (como estado 'unknown'), nunca con value=0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "beach_id",
+    "variable_code",
+    "value",
+    "unit",
+    "nature",
+    "fetched_at",
+    "validation_status",
+    "status",
+    "privacy_level"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Generado por el sistema; puede omitirse en la creación."
+    },
+    "beach_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "variable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "examples": ["occupation", "water_quality", "wave_height", "jellyfish_status"]
+    },
+    "value": {
+      "description": "Valor tipado. Exactamente uno de los tipos; el tipo debe ser coherente con la variable.",
+      "oneOf": [
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "string", "maxLength": 255 }
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "examples": ["%", "count", "m", "s", "°C", "enum", "bool"]
+    },
+    "nature": {
+      "type": "string",
+      "enum": ["observation", "user_report", "estimate", "prediction", "historical", "synthetic", "unknown"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "uri": { "type": "string", "format": "uri" },
+        "license": { "type": "string", "maxLength": 100 },
+        "license_url": { "type": "string", "format": "uri" }
+      }
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "kind": {
+          "type": "string",
+          "enum": ["measurement", "estimate", "prediction", "rule", "aggregation"]
+        },
+        "description": { "type": "string", "maxLength": 2000 }
+      }
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Instante UTC de la observación. Obligatorio para nature=observation y status=current."
+    },
+    "fetched_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Instante UTC de obtención por SANDAM."
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fin de validez. Si falta, se aplica la regla de la variable. Obligatorio para prediction."
+    },
+    "spatial_resolution_m": {
+      "type": "number",
+      "minimum": 0,
+      "description": "0 = puntual; >0 = agregado o modelo con esa resolución aproximada."
+    },
+    "uncertainty": {
+      "type": "number",
+      "minimum": 0
+    },
+    "uncertainty_unit": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "validation_status": {
+      "type": "string",
+      "enum": ["unvalidated", "validated", "rejected"]
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_id", "validated_at"],
+      "properties": {
+        "record_id": { "type": "string", "format": "uuid" },
+        "validated_at": { "type": "string", "format": "date-time" },
+        "validated_by": { "type": "string", "maxLength": 100 },
+        "notes": { "type": "string", "maxLength": 2000 }
+      }
+    },
+    "transformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 20 }
+      }
+    },
+    "privacy_level": {
+      "type": "string",
+      "enum": ["aggregate", "public"],
+      "description": "Prohibido 'individual'. Solo agregados o datos públicos no personales."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["current", "stale", "superseded", "invalid"],
+      "description": "Vigencia. 'stale' no es un valor; es un estado."
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "nature": { "const": "observation" } },
+        "required": ["nature"]
+      },
+      "then": {
+        "required": ["source", "method", "observed_at"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "nature": { "const": "prediction" } },
+        "required": ["nature"]
+      },
+      "then": {
+        "required": ["method", "valid_until"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "validation_status": { "const": "validated" } },
+        "required": ["validation_status"]
+      },
+      "then": {
+        "required": ["validation"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "current" } },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["observed_at"]
+      }
+    }
+  ]
+}
