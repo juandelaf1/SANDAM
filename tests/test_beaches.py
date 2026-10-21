@@ -24,7 +24,9 @@ async def test_create_and_get_beach(client):
     assert created.status_code == 201
     beach = created.json()
     assert beach["name"] == "Cala Major"
-    assert beach["data_status"] == "live"
+    # Comportamiento corregido por spec 002 (FR-011): una playa creada sin
+    # observación no debe nacer como "live"; el estado por defecto es unavailable.
+    assert beach["data_status"] == "unavailable"
 
     fetched = await client.get(f"/api/v1/beaches/{beach['id']}")
     assert fetched.status_code == 200

@@ -253,10 +253,10 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
             "explanation": generar_explicacion(playa, status, sol_restante_min, distancia, score),
             # Calidad del dato (FR-004/FR-015, T021) - etiquetado minimo, sin inventar procedencia
             "data_quality": {
-                "water_quality": {"nature": "observation" if playa.get("water_quality") is not None else "unknown", "source": None},
-                "sea_state": {"nature": "observation" if playa.get("wave_height") is not None else "unknown", "source": None},
-                "solar_exposure": {"nature": "observation" if playa.get("uv_index") is not None else "unknown", "source": None},
-                "occupation": {"nature": "observation" if playa.get("current_occupation") is not None else "unknown", "source": None},
+                "water_quality": {"nature": "unknown" if playa.get("water_quality") is None else "observation", "source": None},
+                "sea_state": {"nature": "unknown" if playa.get("wave_height") is None else "observation", "source": None},
+                "solar_exposure": {"nature": "unknown" if playa.get("uv_index") is None else "observation", "source": None},
+                "occupation": {"nature": "unknown" if playa.get("current_occupation") is None else "observation", "source": None},
             },
         })
 

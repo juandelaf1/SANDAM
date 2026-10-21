@@ -17,7 +17,8 @@ def apply_fallback_values(beach: Dict[str, Any]) -> Dict[str, Any]:
         beach["_quality_warning"] = "Consultar fuentes oficiales para calidad del agua"
 
     if beach.get("jellyfish_present") is None:
-        beach["jellyfish_present"] = False
+        # No inventar ausencia; el estado debe ser unknown hasta observación.
+        beach["jellyfish_status"] = "unknown"
         beach["_jellyfish_disclaimer"] = "Sin datos de medusas. Precaución recomendada"
 
     return beach

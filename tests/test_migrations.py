@@ -113,10 +113,12 @@ def test_downgrade_removes_only_new_columns_and_can_be_reapplied(tmp_path, monke
 
     command.upgrade(config, "0001")
     _insert_legacy_row(db_path)
-    command.upgrade(config, "head")
+    # This test targets revision 0002 explicitly: it must not depend on how
+    # many revisions come after it (0003, spec 002).
+    command.upgrade(config, "0002")
 
     # Task scenario C: revert exactly one revision.
-    command.downgrade(config, "-1")
+    command.downgrade(config, "0001")
 
     columns = _columns(db_path)
     assert "beaches" in _table_names(db_path)
@@ -126,7 +128,7 @@ def test_downgrade_removes_only_new_columns_and_can_be_reapplied(tmp_path, monke
     assert {"id", "name", "region", "latitude", "longitude"} <= set(columns)
     assert _fetch_row(db_path)["name"] == LEGACY_ROW["name"]
 
-    # Re-apply and confirm the schema is coherent again.
-    command.upgrade(config, "head")
+    # Re-apply 0002 and confirm the schema is coherent again.
+    command.upgrade(config, "0002")
     for field in NEW_FIELDS:
         assert field in _columns(db_path)

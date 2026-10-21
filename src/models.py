@@ -48,6 +48,7 @@ class DataStatus(str, Enum):
     live = "live"
     estimated = "estimated"
     unavailable = "unavailable"
+    synthetic = "synthetic"
 
 
 class CapacityProvenanceError(ValueError):
@@ -110,6 +111,19 @@ class Beach(Base):
 
     data_status = Column(String(20), default=DataStatus.unavailable.value)
 
+    # --- Spec 002: estado explícito de las variables heredadas (T008) ---
+    # El valor legado (`current_occupation`, `jellyfish_present`, ...) se conserva
+    # por compatibilidad, pero **no** puede interpretarse sin su estado: un `0`
+    # o un `False` heredados no son una observación (FR-003/FR-004/FR-005).
+    # Estos estados son anulables: NULL = "sin estado clasificado todavía".
+    # Valores: `observed`, `estimated`, `stale`, `unknown`, `synthetic`.
+    occupancy_status = Column(String(20), nullable=True)
+    jellyfish_status = Column(String(20), nullable=True)
+    sargasso_status = Column(String(20), nullable=True)
+    posidonia_status = Column(String(20), nullable=True)
+    # Procedencia del registro: `seed`, `manual`, `imported`, `observed`, `unknown`.
+    data_origin = Column(String(20), nullable=True)
+
     created_at = Column(DateTime, default=utcnow)
     last_updated = Column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -142,3 +156,120 @@ def _enforce_capacity_provenance(session: Session, flush_context, instances) -> 
                     "(procedencia/metodología); no se admite una capacidad de "
                     "referencia sin su método"
                 )
+
+
+# --- Spec 002: observations, provenance, validity ---
+
+class DataSource(Base):
+    __tablename__ = "data_sources"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False, index=True)
+    kind = Column(String(50), nullable=False)
+    uri = Column(Text, nullable=True)
+    license = Column(String(100), nullable=True)
+    license_url = Column(Text, nullable=True)
+    terms_reviewed_at = Column(DateTime, nullable=True)
+    terms_reviewed_by = Column(String(100), nullable=True)
+    priority = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False, default="blocked")
+    contact = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
+class Variable(Base):
+    __tablename__ = "variables"
+    code = Column(String(50), primary_key=True)
+    unit = Column(String(20), nullable=False)
+    value_type = Column(String(20), nullable=False)
+    allowed_values = Column(Text, nullable=True)
+    default_validity_minutes = Column(Integer, nullable=True)
+    is_pressure_indicator = Column(Boolean, default=False)
+    description = Column(Text, nullable=True)
+
+
+class Method(Base):
+    __tablename__ = "methods"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(50), unique=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    kind = Column(String(20), nullable=False)
+    version = Column(String(20), nullable=True)
+    description = Column(Text, nullable=True)
+    validated = Column(Boolean, default=False)
+    validation_id = Column(Uuid(as_uuid=True), nullable=True)
+
+
+class Transformation(Base):
+    __tablename__ = "transformations"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(50), unique=True, nullable=False)
+    description = Column(Text, nullable=True)
+    version = Column(String(20), nullable=True)
+    input_units = Column(String(20), nullable=True)
+    output_units = Column(String(20), nullable=True)
+
+
+class ValidationRecord(Base):
+    __tablename__ = "validation_records"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    method_id = Column(Uuid(as_uuid=True), nullable=False)
+    reference_source_id = Column(Uuid(as_uuid=True), nullable=False)
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+    sample_size = Column(Integer, nullable=False)
+    coverage = Column(Float, nullable=False)
+    metrics = Column(Text, nullable=True)
+    baseline = Column(String(255), nullable=True)
+    decision = Column(String(20), nullable=True)
+    decided_at = Column(DateTime, nullable=True)
+    decided_by = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+class IngestionRun(Base):
+    __tablename__ = "ingestion_runs"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id = Column(Uuid(as_uuid=True), nullable=False)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False, default="success")
+    rows_read = Column(Integer, default=0)
+    rows_written = Column(Integer, default=0)
+    rows_rejected = Column(Integer, default=0)
+    error = Column(Text, nullable=True)
+    idempotency_key = Column(String(255), unique=True, nullable=True)
+
+
+class Observation(Base):
+    __tablename__ = "observations"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    beach_id = Column(Uuid(as_uuid=True), nullable=False, index=True)
+    variable_code = Column(String(50), nullable=False, index=True)
+    value_num = Column(Float, nullable=True)
+    value_bool = Column(Boolean, nullable=True)
+    value_text = Column(String(255), nullable=True)
+    value_enum = Column(String(50), nullable=True)
+    unit = Column(String(20), nullable=False, default="unknown")
+    nature = Column(String(20), nullable=False, default="unknown")
+    source_id = Column(Uuid(as_uuid=True), nullable=True)
+    method_id = Column(Uuid(as_uuid=True), nullable=True)
+    observed_at = Column(DateTime, nullable=True)
+    fetched_at = Column(DateTime, nullable=False, default=utcnow)
+    valid_from = Column(DateTime, nullable=True)
+    valid_until = Column(DateTime, nullable=True)
+    spatial_resolution_m = Column(Float, nullable=True)
+    uncertainty = Column(Float, nullable=True)
+    uncertainty_unit = Column(String(20), nullable=True)
+    validation_status = Column(String(20), nullable=False, default="unvalidated")
+    validation_id = Column(Uuid(as_uuid=True), nullable=True)
+    transformation_id = Column(Uuid(as_uuid=True), nullable=True)
+    privacy_level = Column(String(20), nullable=False, default="aggregate")
+    status = Column(String(20), nullable=False, default="current")
+    created_at = Column(DateTime, default=utcnow)
+
+    __table_args__ = (
+        Index("idx_obs_beach_variable_observed", "beach_id", "variable_code", "observed_at"),
+        Index("idx_obs_status_valid_until", "status", "valid_until"),
+        Index("idx_obs_source_fetched", "source_id", "fetched_at"),
+    )

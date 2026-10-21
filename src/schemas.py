@@ -6,6 +6,28 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.models import Tide, FlagColor, WaterQuality, DataStatus
 
 
+class StateFields(BaseModel):
+    """Estado explícito de las variables heredadas (spec 002).
+
+    Un valor legacy (``current_occupation=0``, ``jellyfish_present=False``, ...) no
+    puede interpretarse sin su estado. El valor legado se conserva para compatibilidad
+    y el estado dice cómo leerlo (FR-003/FR-004/FR-005).
+    """
+
+    occupancy_status: Optional[str] = None  # observed / estimated / stale / unknown / synthetic
+    jellyfish_status: Optional[str] = None
+    sargasso_status: Optional[str] = None
+    posidonia_status: Optional[str] = None
+
+
+class DataOrigin(str, Enum):
+    seed = "seed"
+    manual = "manual"
+    imported = "imported"
+    observed = "observed"
+    unknown = "unknown"
+
+
 class BeachBase(BaseModel):
     name: str = Field(..., max_length=255)
     region: str = Field(..., max_length=100)
@@ -38,10 +60,16 @@ class BeachBase(BaseModel):
     has_parking: bool = False
     has_accessibility: bool = False
     has_lifeguard: bool = False
+    # Estado explícito (spec 002) — se declara junto al valor legado
+    occupancy_status: Optional[str] = None
+    jellyfish_status: Optional[str] = None
+    sargasso_status: Optional[str] = None
+    posidonia_status: Optional[str] = None
+    data_origin: Optional[str] = None
 
 
 class BeachCreate(BeachBase):
-    data_status: DataStatus = DataStatus.live
+    data_status: DataStatus = DataStatus.unavailable
 
 
 class BeachUpdate(BaseModel):

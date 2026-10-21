@@ -64,16 +64,17 @@ def generate_recommendations(beach: dict) -> List[Dict[str, Any]]:
         details = []
         if beach.get("flag_color") == FlagColor.green:
             details.append("✓ Bandera verde")
-        if not beach.get("jellyfish_present"):
+        if beach.get("jellyfish_status") == "absent" and beach.get("jellyfish_present") is False:
             details.append("✓ Sin medusas")
         if beach.get("water_quality") == WaterQuality.excellent:
             details.append("✓ Calidad agua excelente")
-        if beach.get("has_lifeguard"):
+        if beach.get("has_lifeguard") and beach.get("has_lifeguard") is True:
             details.append("✓ Socorrista presente")
-        if occupation < 50:
+        # Solo "playa tranquila" si hay observación válida de ocupación baja.
+        if beach.get("occupancy_status") in ("observed", "estimated") and beach.get("current_occupation", 100) < 50:
             details.append("✓ Playa tranquila")
 
-        messages.append(" | ".join(details) if details else "Condiciones óptimas para el baño")
+        messages.append(" | ".join(details) if details else "Condiciones documentadas; consultar fuentes oficiales")
 
     return [
         {

@@ -533,7 +533,12 @@ async def seed_database():
             if beach_data["name"] in existing_names:
                 continue
             beach = Beach(**beach_data)
-            beach.data_status = DataStatus.live
+            beach.data_status = DataStatus.synthetic
+            beach.data_origin = "seed"
+            beach.occupancy_status = "synthetic"
+            beach.jellyfish_status = "synthetic"
+            beach.sargasso_status = "synthetic"
+            beach.posidonia_status = "synthetic"
             beach.created_at = utcnow()
             beach.last_updated = utcnow()
             session.add(beach)
