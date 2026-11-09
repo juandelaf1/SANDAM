@@ -61,8 +61,10 @@ def classify_observation(
     # Si hay regla (valid_until no nulo y futuro o sin regla con observed_at) y la fuente es válida => current.
     # Aquí simplificamos: si nature no es synthetic/unknown y hay source/method => current cuando no es stale/invalid.
     if nature in {"unknown", "synthetic"}:
+        # Sin regla de vigencia o regla futura: no stale/invalid; nature desconocida se trata como current sin datos (test spec002).
+        _current = valid_until is None or (isinstance(valid_until, datetime) and valid_until > datetime.utcnow())
         return ObservationStatus(
-            nature=nature, validated=validated, status="current" if valid_until and valid_until > datetime.utcnow() else "stale",
+            nature=nature, validated=validated, status="current" if _current else "stale",
             valid_until=valid_until, observed_at=observed_at
         )
     # Para observaciones reales/estimaciones/predicciones con fuente y método.
