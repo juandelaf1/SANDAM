@@ -80,12 +80,14 @@ def _beach_observations(beach: Beach) -> dict:
 def _unavailable(beach: Beach, reason: str) -> dict:
     """Resultado explícito de indisponibilidad (FR-012) para las rutas sin método."""
     return {
+        "contract_version": "sandam-predictions/0.1",
         "beach": beach.name,
         "beach_id": str(beach.id),
         "status": ResponseStatus.insufficient_data.value,
         "reason": reason,
         "nature": "unknown",
         "validated": False,
+        "procedencia": "estimacion/no disponible (sin metodo/fuente verificada; Modo B)",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -119,6 +121,7 @@ async def predict_beach_occupation(
         return {**_unavailable(beach, prediction["reason"]), "method": prediction["method"]}
 
     return {
+        "contract_version": "sandam-predictions/0.1",
         "beach": beach.name,
         "beach_id": str(beach.id),
         **_estimation_block(prediction),
@@ -127,6 +130,7 @@ async def predict_beach_occupation(
         "recommendation": prediction["recommendation"],
         "best_time": prediction["best_time"],
         "factors": prediction["factors"],
+        "procedencia": "prediccion/estimacion heuristica no validada (ver nature/method/validated); ocupacion base segun estado disponible",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -148,6 +152,7 @@ async def predict_jellyfish_risk(
         return {**_unavailable(beach, prediction["reason"]), "method": prediction["method"]}
 
     return {
+        "contract_version": "sandam-predictions/0.1",
         "beach": beach.name,
         "beach_id": str(beach.id),
         **_estimation_block(prediction),
@@ -157,6 +162,7 @@ async def predict_jellyfish_risk(
         "recommendation": prediction["recommendation"],
         "expected_species": prediction["expected_species"],
         "factors": prediction["factors"],
+        "procedencia": "prediccion/estimacion heuristica no validada (ver nature/method/validated); base segun estado disponible",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -229,6 +235,7 @@ async def get_ideal_score(
         status = ResponseStatus.ok.value
 
     return {
+        "contract_version": "sandam-predictions/0.1",
         "beach": beach.name,
         "beach_id": str(beach.id),
         "status": status,
@@ -253,5 +260,6 @@ async def get_ideal_score(
             "recommendation": jelly_pred.get("recommendation"),
             "expected_species": jelly_pred.get("expected_species"),
         },
+        "procedencia": "score canonico + estimaciones heuristicas no validadas (ver nature/method/validated/coverage); presion relativa, no capacidad oficial",
         "timestamp": datetime.now().isoformat(),
     }
