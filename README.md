@@ -9,15 +9,17 @@
 ![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-> **Real-time beach monitoring and smart recommendation API. Async FastAPI + PostgreSQL + geospatial scoring.**
+> API asíncrona (FastAPI) para información, búsqueda geoespacial y recomendaciones de playas. **Ámbito inicial: Mallorca (Illes Balears).**
+
+> **Veracidad (P1 / Modo B):** SANDAM **no afirma** ocupación/capacidad/condiciones en **tiempo real verificadas** sin fuente observable. La ocupación/capacidad puede ser `estimate`/`unknown` (procedencia explícita en respuestas/capabilities). Respetar `AGENTS.md` y la constitución/specs del repo.
 
 ---
 
 ## Elevator Pitch
 
-**Problem**: Beachgoers and local authorities lack a centralized system to check real-time beach conditions — occupancy, water quality, safety flags, and nearby alternatives. Municipalities struggle to manage overcrowding and safety alerts efficiently.
+**Problema**: visitantes y gestores necesitan una vista centralizada de condiciones, seguridad y alternativas cercanas, sin sobreafirmar datos no verificados.
 
-**Solution**: SANDAM — an async REST API with **CRUD operations**, **proximity search**, **smart safety recommendations**, **beach scoring**, **predictions**, external data integrations (AEMET, SOCIB) and **analytics endpoints** for dashboards.
+**Solución**: API con **CRUD**, **búsqueda por proximidad** (Haversine), **scoring/recomendaciones de seguridad**, predicciones/estimaciones etiquetadas, integraciones externas (AEMET, SOCIB según config) y endpoints analíticos para dashboards. Degradación controlada cuando DB/APIs externas no están disponibles.
 
 ---
 
@@ -29,11 +31,12 @@
 | Proximity Search | Haversine-based nearby beach finder |
 | Safety Scoring | Automatic beach safety assessment |
 | Smart Recommendations | Alternative suggestions when conditions are poor |
-| "Dónde ir ahora" | GPS + travel time + remaining sunlight algorithm |
-| Predictions | Occupation, jellyfish risk, shade and forecast |
-| External Data | AEMET weather stations, SOCIB oceanography |
-| Analytics Endpoints | KPIs, alerts, occupancy and quality distribution |
-| Fallback Strategy | Graceful degradation when the DB or APIs are unavailable |
+| "Dónde ir ahora" | GPS + tiempo de viaje + luz solar restante (según datos disponibles) |
+| Predictions / estimates | Ocupación, riesgo de medusas, sombra y previsiones (etiquetadas; no “tiempo real verificado” sin fuente) |
+| External Data | AEMET, SOCIB (según configuración/disponibilidad) |
+| Analytics Endpoints | KPIs, alertas, distribución de ocupación/calidad |
+| Fallback Strategy | Degradación controlada si DB/APIs no están disponibles |
+| Contracts/ops | `contract_version`/procedencia en respuestas relevantes, `/health` y `/health/ready`, OpenAPI snapshot |
 
 ---
 
