@@ -7,7 +7,7 @@ from src.utils.recommendation_engine import (
     calcular_tiempo_viaje,
     predecir_medusas,
 )
-from src.utils.recommendations import generate_recommendations
+from src.utils.recommendations import generate_alerts, generate_recommendations
 from src.utils.scoring import (
     calculate_overall_score,
     calculate_quality_score,
@@ -76,3 +76,12 @@ def test_sun_remaining_is_never_negative():
 def test_generate_recommendations_red_flag_is_danger():
     recs = generate_recommendations({"flag_color": "red", "current_occupation": 10})
     assert recs[0]["level"] == "danger"
+
+
+def test_generate_alerts_high_occupation_is_honest_indicator():
+    """Modo B (spec 003): no afirmar capacidad/aforo verificado."""
+    alerts = generate_alerts({"current_occupation": 95, "occupancy_status": "estimated"})
+    assert alerts
+    msg = alerts[0]["message"]
+    assert "máxima capacidad" not in msg.lower()
+    assert "capacidad verificada" in msg.lower() or "indicador relativo" in msg.lower()

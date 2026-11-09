@@ -25,6 +25,7 @@ async def get_beach_recommendations(
     beach_dict = {
         "name": beach.name,
         "current_occupation": beach.current_occupation,
+        "occupancy_status": getattr(beach, "occupancy_status", None),
         "flag_color": beach.flag_color,
         "water_quality": beach.water_quality,
         "jellyfish_present": beach.jellyfish_present,
@@ -32,7 +33,7 @@ async def get_beach_recommendations(
         "uv_index": beach.uv_index,
         "wave_height": beach.wave_height,
         "has_lifeguard": beach.has_lifeguard,
-        "sargasso_level": beach.sargasso_level
+        "sargasso_level": beach.sargasso_level,
     }
 
     recommendations = generate_recommendations(beach_dict)

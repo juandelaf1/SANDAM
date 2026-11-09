@@ -109,11 +109,14 @@ def generate_alerts(beach: dict) -> List[Dict[str, Any]]:
             "field": "water_quality"
         })
 
-    if beach.get("current_occupation", 0) >= 90:
+    occupation = beach.get("current_occupation", 0)
+    occupancy_status = beach.get("occupancy_status")
+    if occupation >= 90 and occupancy_status in (None, "observed", "estimated"):
         alerts.append({
             "type": "info",
-            "message": "Playa a máxima capacidad",
-            "field": "current_occupation"
+            "message": "Ocupación reportada muy alta (indicador relativo; sin capacidad verificada)",
+            "field": "current_occupation",
+            "nature": occupancy_status or "unknown",
         })
 
     return alerts
