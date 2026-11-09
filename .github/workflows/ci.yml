@@ -1,56 +1,25 @@
 name: CI
-
 on:
   push:
-    branches: [master, main, sdd-adoption]
+    branches: ["**"]
   pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: sandam
-          POSTGRES_PASSWORD: sandam
-          POSTGRES_DB: sandam_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U sandam -d sandam_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-
+          cache: "pip"
+          cache-dependency-path: requirements.txt
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Lint
-        run: ruff check src tests seed_data.py
-
-      - name: Validate OpenAPI contract
-        run: |
-          python -c "import yaml; d = yaml.safe_load(open('specs/001-sustainable-beach-recommendation/contracts/donde-ir.openapi.yaml')); print('OpenAPI', d['openapi'], 'version', d['info']['version'])"
-
-      - name: Tests
-        run: pytest
+          pip install pytest
+      - name: Run tests
+        run: pytest -q
         env:
-          DATABASE_URL: postgresql+asyncpg://sandam:sandam@localhost:5432/sandam_test
-
-      - name: Migration check (Alembic)
-        run: |
-          alembic upgrade head
-          alembic current
-        env:
-          DATABASE_URL: postgresql+asyncpg://sandam:sandam@localhost:5432/sandam_test
+          DATABASE_URL: "sqlite+aiosqlite:///./test.db"

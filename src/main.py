@@ -74,7 +74,15 @@ async def health_check():
     return {
         "status": "healthy",
         "version": "1.0.0",
+        "contract_version": "sandam-api/0.1",
         "timestamp": utcnow(),
+        "capabilities": {
+            "openapi": "/docs",
+            "recommendations": "experimental",
+            "capacity_verified": False,
+            "occupancy_realtime_verified": False,
+            "provenance_required": True,
+        },
     }
 
 

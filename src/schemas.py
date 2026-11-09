@@ -177,7 +177,9 @@ class DashboardSummary(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str = "1.0.0"
+    contract_version: str = "sandam-api/0.1"
     timestamp: datetime
+    capabilities: Optional[dict] = None
 
 
 # ---------------------------------------------------------------------------
