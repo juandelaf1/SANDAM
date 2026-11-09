@@ -69,6 +69,18 @@ app.include_router(donde_ir.router, prefix="/api/v1")
 app.include_router(scraper_endpoints.router, prefix="/api/v1")
 
 
+from fastapi import Request
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     return {
