@@ -342,7 +342,7 @@ class PlatgesBalearsScraper:
     """
     Scraper para Platges de Balears (web oficial)
     URL: https://www.platgesdebalears.com
-    Datos: Bandera, ocupación, temp, medusas (todo en tiempo real)
+    Datos: bandera, ocupación/indicadores, temperatura, medusas (según publicación de la fuente; verificar procedencia/latencia).
     """
     
     BASE_URL = "https://www.platgesdebalears.com"

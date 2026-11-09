@@ -1,4 +1,4 @@
-"""API Endpoint: Datos en Tiempo Real (Scraping)"""
+"""API Endpoint: Datos de scraping (procedencia mixta/según fuente; no afirmar tiempo real verificado sin evidencia)."""
 
 import asyncio
 
@@ -17,10 +17,11 @@ router = APIRouter(prefix="/scraper", tags=["scraper"])
 @router.get("/actualizar")
 async def actualizar_datos():
     """
-    Ejecuta todos los scrapers y obtiene datos en tiempo real:
-    - UIB BeachCam: Ocupación real por cámaras AI
-    - MedusApp: Avistamientos de medusas
-    - Platges de Balears: Banderas y ocupación oficial
+    Ejecuta scrapers y devuelve datos según fuente disponible (procedencia mixta).
+    Modo B/Q1-Q2: no afirmar ocupación/capacidad/tiempo real verificado sin fuente, metodología y latencia conocidas.
+    - UIB BeachCam: señal/estimación de ocupación (verificar procedencia)
+    - MedusApp: avistamientos reportados
+    - Platges de Balears: banderas/indicadores publicados oficialmente
     """
     try:
         datos = await asyncio.to_thread(scrape_all_sources)

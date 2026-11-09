@@ -217,6 +217,11 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
 
         hora_llegada = datetime.now() + timedelta(minutes=tiempo_viaje)
 
+        # Calidad del dato (FR-004/FR-015, T021, Modo B spec 003) - etiquetado minimo
+        _occ_status = playa.get("occupancy_status")
+        # Modo B: sin estado verificado, no afirmar "observation"; enum contrato usa "estimate"
+        _occ_nature = "unknown" if playa.get("current_occupation") is None else (_occ_status or "estimate")
+
         recomendaciones.append({
             "nombre": playa.get("name"),
             "latitude": playa.get("latitude"),
@@ -251,12 +256,11 @@ def donde_ir_ahora(playas: List[Dict], lat_usuario: float, lon_usuario: float,
             "travel_time_is_estimate": True,
             # Explicacion estructurada (FR-006, T017/T018)
             "explanation": generar_explicacion(playa, status, sol_restante_min, distancia, score),
-            # Calidad del dato (FR-004/FR-015, T021) - etiquetado minimo, sin inventar procedencia
             "data_quality": {
                 "water_quality": {"nature": "unknown" if playa.get("water_quality") is None else "observation", "source": None},
                 "sea_state": {"nature": "unknown" if playa.get("wave_height") is None else "observation", "source": None},
                 "solar_exposure": {"nature": "unknown" if playa.get("uv_index") is None else "observation", "source": None},
-                "occupation": {"nature": "unknown" if playa.get("current_occupation") is None else "observation", "source": None},
+                "occupation": {"nature": _occ_nature, "source": None},
             },
         })
 

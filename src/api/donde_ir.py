@@ -25,6 +25,7 @@ def _beach_to_dict(beach: Beach) -> dict:
         "longitude": beach.longitude,
         "region": beach.region,
         "current_occupation": beach.current_occupation,
+        "occupancy_status": getattr(beach, "occupancy_status", None),
         "flag_color": beach.flag_color,
         "water_quality": beach.water_quality,
         "jellyfish_present": beach.jellyfish_present,
