@@ -1,0 +1,2919 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SANDAM API",
+    "description": "Smart Beach Management API - Gestión inteligente de playas",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/beaches/nearby": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Get Beaches Nearby",
+        "operationId": "get_beaches_nearby_api_v1_beaches_nearby_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lon"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "exclusiveMinimum": 0,
+              "default": 10,
+              "title": "Radius Km"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NearbyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/beaches/best-nearby": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Get Best Beaches Nearby",
+        "operationId": "get_best_beaches_nearby_api_v1_beaches_best_nearby_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lon"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "exclusiveMinimum": 0,
+              "default": 10,
+              "title": "Radius Km"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/beaches/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search Beach",
+        "operationId": "search_beach_api_v1_beaches_search_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lon"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100,
+              "exclusiveMinimum": 0,
+              "default": 10,
+              "title": "Radius Km"
+            }
+          },
+          {
+            "name": "max_occupation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Occupation"
+            }
+          },
+          {
+            "name": "min_quality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WaterQuality"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Quality"
+            }
+          },
+          {
+            "name": "avoid_jellyfish",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Avoid Jellyfish"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/beaches/": {
+      "post": {
+        "tags": [
+          "beaches"
+        ],
+        "summary": "Create Beach",
+        "operationId": "create_beach_api_v1_beaches__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeachCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeachResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "beaches"
+        ],
+        "summary": "List Beaches",
+        "operationId": "list_beaches_api_v1_beaches__get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "name": "flag_color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FlagColor"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flag Color"
+            }
+          },
+          {
+            "name": "water_quality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WaterQuality"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Water Quality"
+            }
+          },
+          {
+            "name": "has_lifeguard",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Lifeguard"
+            }
+          },
+          {
+            "name": "has_shade",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Shade"
+            }
+          },
+          {
+            "name": "occupation_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Occupation Min"
+            }
+          },
+          {
+            "name": "occupation_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Occupation Max"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeachListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/beaches/{beach_id}": {
+      "get": {
+        "tags": [
+          "beaches"
+        ],
+        "summary": "Get Beach",
+        "operationId": "get_beach_api_v1_beaches__beach_id__get",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeachResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "beaches"
+        ],
+        "summary": "Update Beach",
+        "operationId": "update_beach_api_v1_beaches__beach_id__put",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeachUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeachResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "beaches"
+        ],
+        "summary": "Delete Beach",
+        "operationId": "delete_beach_api_v1_beaches__beach_id__delete",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/beaches/{beach_id}/recommendations": {
+      "get": {
+        "tags": [
+          "recommendations"
+        ],
+        "summary": "Get Beach Recommendations",
+        "operationId": "get_beach_recommendations_api_v1_beaches__beach_id__recommendations_get",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Summary",
+        "operationId": "get_dashboard_summary_api_v1_dashboard_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/alerts": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Alerts",
+        "operationId": "get_alerts_api_v1_dashboard_alerts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/analytics/occupation": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Occupation Analytics",
+        "operationId": "get_occupation_analytics_api_v1_dashboard_analytics_occupation_get",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/analytics/quality": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Quality Analytics",
+        "operationId": "get_quality_analytics_api_v1_dashboard_analytics_quality_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/analytics/safety": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Safety Analytics",
+        "operationId": "get_safety_analytics_api_v1_dashboard_analytics_safety_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/beach/{beach_id}": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Get Weather For Beach",
+        "description": "Get weather data for a specific beach",
+        "operationId": "get_weather_for_beach_api_v1_weather_beach__beach_id__get",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/nearby": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Get Weather Nearby",
+        "description": "Get weather for nearest station to coordinates",
+        "operationId": "get_weather_nearby_api_v1_weather_nearby_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lon"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/stations": {
+      "get": {
+        "tags": [
+          "weather"
+        ],
+        "summary": "Get Stations",
+        "description": "Get list of available weather stations",
+        "operationId": "get_stations_api_v1_weather_stations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external/comprehensive/{beach_id}": {
+      "get": {
+        "tags": [
+          "external_data"
+        ],
+        "summary": "Get Comprehensive Beach Data",
+        "description": "Get comprehensive external data for a beach",
+        "operationId": "get_comprehensive_beach_data_api_v1_external_comprehensive__beach_id__get",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external/compare/{beach_id}": {
+      "get": {
+        "tags": [
+          "external_data"
+        ],
+        "summary": "Compare With Nearby",
+        "description": "Compare beach with nearby alternatives",
+        "operationId": "compare_with_nearby_api_v1_external_compare__beach_id__get",
+        "parameters": [
+          {
+            "name": "beach_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Beach Id"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 15,
+              "title": "Radius Km"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external/sources": {
+      "get": {
+        "tags": [
+          "external_data"
+        ],
+        "summary": "Get Data Sources",
+        "description": "Get list of all available data sources",
+        "operationId": "get_data_sources_api_v1_external_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/occupation/{beach_name}": {
+      "get": {
+        "tags": [
+          "predictions"
+        ],
+        "summary": "Predict Beach Occupation",
+        "description": "Estimación determinista de ocupación (método heurístico no validado).",
+        "operationId": "predict_beach_occupation_api_v1_predictions_occupation__beach_name__get",
+        "parameters": [
+          {
+            "name": "beach_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Beach Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/jellyfish/{beach_name}": {
+      "get": {
+        "tags": [
+          "predictions"
+        ],
+        "summary": "Predict Jellyfish Risk",
+        "description": "Estimación determinista del riesgo de medusas (método heurístico no validado).",
+        "operationId": "predict_jellyfish_risk_api_v1_predictions_jellyfish__beach_name__get",
+        "parameters": [
+          {
+            "name": "beach_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Beach Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/shade/{beach_name}": {
+      "get": {
+        "tags": [
+          "predictions"
+        ],
+        "summary": "Get Shade Availability",
+        "description": "Sin método ni fuente para la sombra natural: se declara indisponible.",
+        "operationId": "get_shade_availability_api_v1_predictions_shade__beach_name__get",
+        "parameters": [
+          {
+            "name": "beach_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Beach Name"
+            }
+          },
+          {
+            "name": "hour",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 23,
+              "minimum": 0,
+              "description": "Hour of day (0-23)",
+              "title": "Hour"
+            },
+            "description": "Hour of day (0-23)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/forecast/{beach_name}": {
+      "get": {
+        "tags": [
+          "predictions"
+        ],
+        "summary": "Get Beach Forecast",
+        "description": "Sin método ni datos de pronóstico: se declara indisponible (FR-005).",
+        "operationId": "get_beach_forecast_api_v1_predictions_forecast__beach_name__get",
+        "parameters": [
+          {
+            "name": "beach_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Beach Name"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 1,
+              "default": 3,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/ideal-score/{beach_name}": {
+      "get": {
+        "tags": [
+          "predictions"
+        ],
+        "summary": "Get Ideal Score",
+        "description": "Score **canónico** de la playa (FR-016) y estimaciones etiquetadas.\n\n``status`` usa ``ResponseStatus``: ``ok`` si hay score, ``no_suitable_alternatives``\nsi la playa queda excluida (motivos en ``eligibility_conditions``) e\n``insufficient_data`` si faltan datos. ``eligible`` es la señal principal.",
+        "operationId": "get_ideal_score_api_v1_predictions_ideal_score__beach_name__get",
+        "parameters": [
+          {
+            "name": "beach_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Beach Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/donde-ir/ahora": {
+      "get": {
+        "tags": [
+          "donde-ir"
+        ],
+        "summary": "Donde Ir Ahora Endpoint",
+        "description": "🚀 ALGORITMO PRINCIPAL: Dónde voy ahora\n\nDado tu ubicación GPS y la hora actual, te dice:\n- Qué playas están a tiempo de llegar\n- Cuánto tiempo de viaje\n- Cuándo llegas\n- Si merece la pena (teniendo en cuenta el sol que queda)\n\nReturns: Lista de recomendaciones ordenadas por meritocracia",
+        "operationId": "donde_ir_ahora_endpoint_api_v1_donde_ir_ahora_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "description": "Latitud del usuario (GPS)",
+              "title": "Lat"
+            },
+            "description": "Latitud del usuario (GPS)"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "description": "Longitud del usuario (GPS)",
+              "title": "Lon"
+            },
+            "description": "Longitud del usuario (GPS)"
+          },
+          {
+            "name": "incluir_marginales",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Incluir playas marginales",
+              "default": false,
+              "title": "Incluir Marginales"
+            },
+            "description": "Incluir playas marginales"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/donde-ir/sol-restante": {
+      "get": {
+        "tags": [
+          "donde-ir"
+        ],
+        "summary": "Sol Restante Endpoint",
+        "description": "Devuelve las horas de sol restantes hasta atardecer",
+        "operationId": "sol_restante_endpoint_api_v1_donde_ir_sol_restante_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/donde-ir/evaluar-playa/{playa_nombre}": {
+      "get": {
+        "tags": [
+          "donde-ir"
+        ],
+        "summary": "Evaluar Playa Endpoint",
+        "description": "Evalúa si merece la pena ir a una playa específica",
+        "operationId": "evaluar_playa_endpoint_api_v1_donde_ir_evaluar_playa__playa_nombre__get",
+        "parameters": [
+          {
+            "name": "playa_nombre",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Playa Nombre"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "description": "Tu latitud",
+              "title": "Lat"
+            },
+            "description": "Tu latitud"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "description": "Tu longitud",
+              "title": "Lon"
+            },
+            "description": "Tu longitud"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/donde-ir/prediccion-medusas": {
+      "get": {
+        "tags": [
+          "donde-ir"
+        ],
+        "summary": "Predecir Medusas Endpoint",
+        "description": "Predice riesgo de medusas basado en condiciones",
+        "operationId": "predecir_medusas_endpoint_api_v1_donde_ir_prediccion_medusas_get",
+        "parameters": [
+          {
+            "name": "viento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Dirección viento (N, NE, E, SE, S, SW, W, NW)",
+              "title": "Viento"
+            },
+            "description": "Dirección viento (N, NE, E, SE, S, SW, W, NW)"
+          },
+          {
+            "name": "temperatura",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 40,
+              "minimum": 0,
+              "description": "Temperatura agua °C",
+              "title": "Temperatura"
+            },
+            "description": "Temperatura agua °C"
+          },
+          {
+            "name": "corrientes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Dirección corrientes (norte/sur)",
+              "title": "Corrientes"
+            },
+            "description": "Dirección corrientes (norte/sur)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scraper/actualizar": {
+      "get": {
+        "tags": [
+          "scraper"
+        ],
+        "summary": "Actualizar Datos",
+        "description": "Ejecuta todos los scrapers y obtiene datos en tiempo real:\n- UIB BeachCam: Ocupación real por cámaras AI\n- MedusApp: Avistamientos de medusas\n- Platges de Balears: Banderas y ocupación oficial",
+        "operationId": "actualizar_datos_api_v1_scraper_actualizar_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scraper/ocupacion": {
+      "get": {
+        "tags": [
+          "scraper"
+        ],
+        "summary": "Obtener Ocupacion",
+        "description": "Obtiene solo datos de ocupación (UIB BeachCam)",
+        "operationId": "obtener_ocupacion_api_v1_scraper_ocupacion_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scraper/medusas": {
+      "get": {
+        "tags": [
+          "scraper"
+        ],
+        "summary": "Obtener Medusas",
+        "description": "Obtiene solo avistamientos de medusas (MedusApp)",
+        "operationId": "obtener_medusas_api_v1_scraper_medusas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scraper/banderas": {
+      "get": {
+        "tags": [
+          "scraper"
+        ],
+        "summary": "Obtener Banderas",
+        "description": "Obtiene solo banderas (Platges de Balears)",
+        "operationId": "obtener_banderas_api_v1_scraper_banderas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness Check",
+        "operationId": "readiness_check_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BeachCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "region": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Region"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "max_capacity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Capacity"
+          },
+          "current_occupation": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Current Occupation",
+            "default": 0
+          },
+          "water_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Temp"
+          },
+          "air_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Air Temp"
+          },
+          "uv_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 11.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uv Index"
+          },
+          "wind_speed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind Speed"
+          },
+          "wave_height": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wave Height"
+          },
+          "tide": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flag_color": {
+            "$ref": "#/components/schemas/FlagColor",
+            "default": "unknown"
+          },
+          "jellyfish_present": {
+            "type": "boolean",
+            "title": "Jellyfish Present",
+            "default": false
+          },
+          "jellyfish_species": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Species"
+          },
+          "sargasso_level": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Sargasso Level",
+            "default": 0
+          },
+          "posidonia_present": {
+            "type": "boolean",
+            "title": "Posidonia Present",
+            "default": false
+          },
+          "water_quality": {
+            "$ref": "#/components/schemas/WaterQuality",
+            "default": "unknown"
+          },
+          "e_coli_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "E Coli Count"
+          },
+          "enterococci_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enterococci Count"
+          },
+          "has_kiosk": {
+            "type": "boolean",
+            "title": "Has Kiosk",
+            "default": false
+          },
+          "has_shade": {
+            "type": "boolean",
+            "title": "Has Shade",
+            "default": false
+          },
+          "has_showers": {
+            "type": "boolean",
+            "title": "Has Showers",
+            "default": false
+          },
+          "has_parking": {
+            "type": "boolean",
+            "title": "Has Parking",
+            "default": false
+          },
+          "has_accessibility": {
+            "type": "boolean",
+            "title": "Has Accessibility",
+            "default": false
+          },
+          "has_lifeguard": {
+            "type": "boolean",
+            "title": "Has Lifeguard",
+            "default": false
+          },
+          "occupancy_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occupancy Status"
+          },
+          "jellyfish_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Status"
+          },
+          "sargasso_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sargasso Status"
+          },
+          "posidonia_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posidonia Status"
+          },
+          "data_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Origin"
+          },
+          "data_status": {
+            "$ref": "#/components/schemas/DataStatus",
+            "default": "unavailable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "region",
+          "latitude",
+          "longitude"
+        ],
+        "title": "BeachCreate"
+      },
+      "BeachListResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "beaches": {
+            "items": {
+              "$ref": "#/components/schemas/BeachResponse"
+            },
+            "type": "array",
+            "title": "Beaches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "beaches"
+        ],
+        "title": "BeachListResponse"
+      },
+      "BeachResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "region": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Region"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "max_capacity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Capacity"
+          },
+          "current_occupation": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Current Occupation",
+            "default": 0
+          },
+          "water_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Temp"
+          },
+          "air_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Air Temp"
+          },
+          "uv_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 11.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uv Index"
+          },
+          "wind_speed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind Speed"
+          },
+          "wave_height": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wave Height"
+          },
+          "tide": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flag_color": {
+            "$ref": "#/components/schemas/FlagColor",
+            "default": "unknown"
+          },
+          "jellyfish_present": {
+            "type": "boolean",
+            "title": "Jellyfish Present",
+            "default": false
+          },
+          "jellyfish_species": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Species"
+          },
+          "sargasso_level": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Sargasso Level",
+            "default": 0
+          },
+          "posidonia_present": {
+            "type": "boolean",
+            "title": "Posidonia Present",
+            "default": false
+          },
+          "water_quality": {
+            "$ref": "#/components/schemas/WaterQuality",
+            "default": "unknown"
+          },
+          "e_coli_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "E Coli Count"
+          },
+          "enterococci_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enterococci Count"
+          },
+          "has_kiosk": {
+            "type": "boolean",
+            "title": "Has Kiosk",
+            "default": false
+          },
+          "has_shade": {
+            "type": "boolean",
+            "title": "Has Shade",
+            "default": false
+          },
+          "has_showers": {
+            "type": "boolean",
+            "title": "Has Showers",
+            "default": false
+          },
+          "has_parking": {
+            "type": "boolean",
+            "title": "Has Parking",
+            "default": false
+          },
+          "has_accessibility": {
+            "type": "boolean",
+            "title": "Has Accessibility",
+            "default": false
+          },
+          "has_lifeguard": {
+            "type": "boolean",
+            "title": "Has Lifeguard",
+            "default": false
+          },
+          "occupancy_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occupancy Status"
+          },
+          "jellyfish_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Status"
+          },
+          "sargasso_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sargasso Status"
+          },
+          "posidonia_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posidonia Status"
+          },
+          "data_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Origin"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "data_status": {
+            "$ref": "#/components/schemas/DataStatus",
+            "default": "unavailable"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "region",
+          "latitude",
+          "longitude",
+          "id",
+          "created_at",
+          "last_updated"
+        ],
+        "title": "BeachResponse"
+      },
+      "BeachUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "max_capacity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Capacity"
+          },
+          "current_occupation": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Occupation"
+          },
+          "water_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Temp"
+          },
+          "air_temp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Air Temp"
+          },
+          "uv_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 11.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uv Index"
+          },
+          "wind_speed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind Speed"
+          },
+          "wave_height": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wave Height"
+          },
+          "tide": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flag_color": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlagColor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jellyfish_present": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Present"
+          },
+          "jellyfish_species": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jellyfish Species"
+          },
+          "sargasso_level": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sargasso Level"
+          },
+          "posidonia_present": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posidonia Present"
+          },
+          "water_quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WaterQuality"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "e_coli_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "E Coli Count"
+          },
+          "enterococci_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enterococci Count"
+          },
+          "has_kiosk": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Kiosk"
+          },
+          "has_shade": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Shade"
+          },
+          "has_showers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Showers"
+          },
+          "has_parking": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Parking"
+          },
+          "has_accessibility": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Accessibility"
+          },
+          "has_lifeguard": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Lifeguard"
+          },
+          "data_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "BeachUpdate"
+      },
+      "DashboardSummary": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version",
+            "default": "sandam-dashboard/0.1"
+          },
+          "total_beaches": {
+            "type": "integer",
+            "title": "Total Beaches"
+          },
+          "avg_occupation": {
+            "type": "number",
+            "title": "Avg Occupation"
+          },
+          "quality_distribution": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Quality Distribution"
+          },
+          "flag_distribution": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Flag Distribution"
+          },
+          "active_alerts": {
+            "type": "integer",
+            "title": "Active Alerts"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Updated"
+          },
+          "procedencia": {
+            "type": "string",
+            "title": "Procedencia",
+            "default": "agregado (puede incluir estimados; ver procedencia por campo/fuente)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_beaches",
+          "avg_occupation",
+          "quality_distribution",
+          "flag_distribution",
+          "active_alerts",
+          "last_updated"
+        ],
+        "title": "DashboardSummary"
+      },
+      "DataStatus": {
+        "type": "string",
+        "enum": [
+          "live",
+          "estimated",
+          "unavailable",
+          "synthetic"
+        ],
+        "title": "DataStatus"
+      },
+      "FlagColor": {
+        "type": "string",
+        "enum": [
+          "green",
+          "yellow",
+          "red",
+          "unknown"
+        ],
+        "title": "FlagColor"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "1.0.0"
+          },
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version",
+            "default": "sandam-api/0.1"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capabilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp"
+        ],
+        "title": "HealthResponse"
+      },
+      "NearbyBeachResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "current_occupation": {
+            "type": "integer",
+            "title": "Current Occupation"
+          },
+          "flag_color": {
+            "$ref": "#/components/schemas/FlagColor"
+          },
+          "water_quality": {
+            "$ref": "#/components/schemas/WaterQuality"
+          },
+          "has_lifeguard": {
+            "type": "boolean",
+            "title": "Has Lifeguard"
+          },
+          "distance_km": {
+            "type": "number",
+            "title": "Distance Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "region",
+          "latitude",
+          "longitude",
+          "current_occupation",
+          "flag_color",
+          "water_quality",
+          "has_lifeguard",
+          "distance_km"
+        ],
+        "title": "NearbyBeachResponse"
+      },
+      "NearbyResponse": {
+        "properties": {
+          "requested_lat": {
+            "type": "number",
+            "title": "Requested Lat"
+          },
+          "requested_lon": {
+            "type": "number",
+            "title": "Requested Lon"
+          },
+          "radius_km": {
+            "type": "number",
+            "title": "Radius Km"
+          },
+          "beaches": {
+            "items": {
+              "$ref": "#/components/schemas/NearbyBeachResponse"
+            },
+            "type": "array",
+            "title": "Beaches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requested_lat",
+          "requested_lon",
+          "radius_km",
+          "beaches"
+        ],
+        "title": "NearbyResponse"
+      },
+      "RecommendationResponse": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version",
+            "default": "sandam-recommendation/0.1"
+          },
+          "beach_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Beach Id"
+          },
+          "beach_name": {
+            "type": "string",
+            "title": "Beach Name"
+          },
+          "data_status": {
+            "$ref": "#/components/schemas/DataStatus"
+          },
+          "recommendations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "alerts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Updated"
+          },
+          "procedencia": {
+            "type": "string",
+            "title": "Procedencia",
+            "default": "mixta (segun fuentes; ver data_status y OPEN_QUESTIONS Q1/Q2)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "beach_id",
+          "beach_name",
+          "data_status",
+          "recommendations",
+          "alerts",
+          "last_updated"
+        ],
+        "title": "RecommendationResponse"
+      },
+      "SearchResponse": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version",
+            "default": "sandam-search/0.1"
+          },
+          "requested_beach": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BeachResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "procedencia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Procedencia",
+            "default": "mixta (estimada/observada segun disponibilidad; sin capacidad verificada Q1/Q2)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requested_beach",
+          "recommendation"
+        ],
+        "title": "SearchResponse"
+      },
+      "Tide": {
+        "type": "string",
+        "enum": [
+          "alta",
+          "baja",
+          "media"
+        ],
+        "title": "Tide"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WaterQuality": {
+        "type": "string",
+        "enum": [
+          "excellent",
+          "good",
+          "sufficient",
+          "poor",
+          "unknown"
+        ],
+        "title": "WaterQuality"
+      }
+    }
+  }
+}
