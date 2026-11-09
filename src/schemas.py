@@ -152,26 +152,32 @@ class BeachAlternative(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
+    contract_version: str = "sandam-recommendation/0.1"
     beach_id: UUID
     beach_name: str
     data_status: DataStatus
     recommendations: List[dict]
     alerts: List[dict]
     last_updated: datetime
+    procedencia: str = "mixta (segun fuentes; ver data_status y OPEN_QUESTIONS Q1/Q2)"
 
 
 class SearchResponse(BaseModel):
+    contract_version: str = "sandam-search/0.1"
     requested_beach: Optional[BeachResponse]
     recommendation: Optional[dict]
+    procedencia: Optional[str] = "mixta (estimada/observada segun disponibilidad; sin capacidad verificada Q1/Q2)"
 
 
 class DashboardSummary(BaseModel):
+    contract_version: str = "sandam-dashboard/0.1"
     total_beaches: int
     avg_occupation: float
     quality_distribution: dict
     flag_distribution: dict
     active_alerts: int
     last_updated: datetime
+    procedencia: str = "agregado (puede incluir estimados; ver procedencia por campo/fuente)"
 
 
 class HealthResponse(BaseModel):
